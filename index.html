@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Tracker - Watford Junction to London Euston</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>Train Tracker</h1>
+                <p class="subtitle">Watford Junction → London Euston</p>
+            </div>
+            <div class="header-controls">
+                <div class="toggle-container">
+                    <label class="toggle-label">
+                        <span class="toggle-text">London Overground</span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="overground-toggle" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
+                </div>
+                <button id="refresh-btn" class="btn btn--primary">
+                    <span class="refresh-icon">↻</span>
+                    Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">API Status:</span>
+                <span id="api-status" class="status--info">Connecting...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Last Updated:</span>
+                <span id="last-updated">Never</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Trains Displayed:</span>
+                <span id="train-count">0</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading-state hidden">
+            <div class="loading-spinner"></div>
+            <p>Fetching latest train information...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="error-state hidden">
+            <h3>Unable to load train data</h3>
+            <p id="error-message">Please check your connection and try again.</p>
+            <button id="retry-btn" class="btn btn--outline">Retry</button>
+        </div>
+
+        <!-- Trains Container -->
+        <div id="trains-container" class="trains-container">
+            <!-- Train cards will be inserted here -->
+        </div>
+
+        <!-- API Log Section -->
+        <div class="log-section">
+            <div class="log-header">
+                <button id="log-toggle" class="log-toggle-btn">
+                    <span class="log-icon">▼</span>
+                    <span class="log-title">API Response Log</span>
+                    <span id="log-badge" class="log-badge">0</span>
+                </button>
+            </div>
+            <div id="log-content" class="log-content hidden">
+                <div class="log-controls">
+                    <button id="clear-log" class="btn btn--sm btn--outline">Clear Log</button>
+                    <span class="log-info">Showing latest API responses and errors</span>
+                </div>
+                <div id="log-entries" class="log-entries">
+                    <div class="log-entry log-entry--info">
+                        <div class="log-timestamp">App started</div>
+                        <div class="log-content-text">Train tracking application initialized</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
