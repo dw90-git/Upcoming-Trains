@@ -3,122 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upcoming Trains - Enhanced with CORS Support</title>
+    <title>Train Tracker - Enhanced with Debug Tools</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>Upcoming Trains</h1>
-            <p class="subtitle">Find your next train with live data and CORS support</p>
+            <h1>Train Tracker</h1>
+            <p class="subtitle">Live train data with comprehensive debugging tools</p>
         </header>
 
-        <main class="main-content">
-            <!-- API Access Method Selection -->
-            <div class="card api-method-card">
-                <div class="card__header">
-                    <h3>API Access Method</h3>
-                </div>
-                <div class="card__body">
-                    <div class="form-group">
-                        <label for="api-method" class="form-label">Choose how to access train data:</label>
-                        <select id="api-method" class="form-control">
-                            <option value="direct">Direct API (may be blocked by CORS)</option>
-                            <option value="proxy1">CORS Proxy 1 (cors-anywhere)</option>
-                            <option value="proxy2" selected>CORS Proxy 2 (allorigins)</option>
-                            <option value="sample">Sample Data (for testing)</option>
-                        </select>
-                    </div>
-                    <div class="data-source-indicator">
-                        <span id="data-source-status" class="status status--info">Ready to search</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button tab-button--active" data-tab="main">Train Search</button>
+            <button class="tab-button" data-tab="debug">Debug Tools</button>
+        </div>
 
-            <!-- Station Selection -->
-            <div class="card station-card">
-                <div class="card__header">
-                    <h3>Select Journey</h3>
-                </div>
-                <div class="card__body">
-                    <div class="journey-inputs">
-                        <div class="station-input-group">
-                            <div class="form-group">
-                                <label for="from-station" class="form-label">From</label>
-                                <input type="text" id="from-station" class="form-control station-autocomplete" 
-                                       placeholder="Enter departure station..." autocomplete="off">
-                                <div id="from-suggestions" class="suggestions-dropdown hidden"></div>
-                            </div>
-                        </div>
-
-                        <button id="swap-stations" class="btn btn--secondary swap-btn" type="button" aria-label="Swap stations">
-                            ⇄
-                        </button>
-
-                        <div class="station-input-group">
-                            <div class="form-group">
-                                <label for="to-station" class="form-label">To</label>
-                                <input type="text" id="to-station" class="form-control station-autocomplete" 
-                                       placeholder="Enter destination station..." autocomplete="off">
-                                <div id="to-suggestions" class="suggestions-dropdown hidden"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="options-row">
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="london-overground" class="checkbox">
-                                <span class="checkmark"></span>
-                                Include London Overground
-                            </label>
-                        </div>
-                        <button id="search-trains" class="btn btn--primary" type="button" disabled>
-                            Search Trains
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Results Section -->
-            <div id="results-container" class="results-container hidden">
-                <div class="card">
+        <!-- Main Tab Content -->
+        <div id="main-tab" class="tab-content tab-content--active">
+            <main class="main-content">
+                <!-- API Access Method Selection -->
+                <div class="card api-method-card">
                     <div class="card__header">
-                        <div class="results-header">
-                            <h3 id="route-display">Train Results</h3>
-                            <div id="last-updated" class="last-updated"></div>
+                        <h3>API Access Method</h3>
+                    </div>
+                    <div class="card__body">
+                        <div class="form-group">
+                            <label for="api-method" class="form-label">Choose how to access train data:</label>
+                            <select id="api-method" class="form-control">
+                                <option value="direct">Direct API (may be blocked by CORS)</option>
+                                <option value="proxy1">CORS Proxy 1 (cors-anywhere)</option>
+                                <option value="proxy2" selected>CORS Proxy 2 (allorigins)</option>
+                                <option value="proxy3">CORS Proxy 3 (codetabs)</option>
+                                <option value="sample">Sample Data (for testing)</option>
+                            </select>
+                        </div>
+                        <div class="data-source-indicator">
+                            <span id="data-source-status" class="status status--info">Ready to search</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Station Selection -->
+                <div class="card station-card">
+                    <div class="card__header">
+                        <h3>Select Journey</h3>
+                    </div>
+                    <div class="card__body">
+                        <div class="journey-inputs">
+                            <div class="station-input-group">
+                                <div class="form-group">
+                                    <label for="from-station" class="form-label">From</label>
+                                    <input type="text" id="from-station" class="form-control station-autocomplete" 
+                                           placeholder="Enter departure station..." autocomplete="off">
+                                    <div id="from-suggestions" class="suggestions-dropdown hidden"></div>
+                                </div>
+                            </div>
+
+                            <button id="swap-stations" class="btn btn--secondary swap-btn" type="button" aria-label="Swap stations">
+                                ⇄
+                            </button>
+
+                            <div class="station-input-group">
+                                <div class="form-group">
+                                    <label for="to-station" class="form-label">To</label>
+                                    <input type="text" id="to-station" class="form-control station-autocomplete" 
+                                           placeholder="Enter destination station..." autocomplete="off">
+                                    <div id="to-suggestions" class="suggestions-dropdown hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="options-row">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="london-overground" class="checkbox">
+                                    <span class="checkmark"></span>
+                                    Include London Overground
+                                </label>
+                            </div>
+                            <button id="search-trains" class="btn btn--primary" type="button" disabled>
+                                Search Trains
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results-container" class="results-container hidden">
+                    <div class="card">
+                        <div class="card__header">
+                            <div class="results-header">
+                                <h3 id="route-display">Train Results</h3>
+                                <div id="last-updated" class="last-updated"></div>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div id="loading-indicator" class="loading-indicator hidden">
+                                <div class="spinner"></div>
+                                <p>Searching for trains...</p>
+                            </div>
+                            <div id="train-results" class="train-results"></div>
+                            <div id="error-message" class="error-message hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CORS Help Section -->
+                <div class="card help-card">
+                    <div class="card__header">
+                        <h3>Need Help with CORS?</h3>
+                    </div>
+                    <div class="card__body">
+                        <div class="help-content">
+                            <p><strong>What is CORS?</strong> Cross-Origin Resource Sharing (CORS) is a browser security feature that can block API requests from web applications.</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li><strong>CORS Proxies:</strong> Use proxy services to bypass CORS restrictions</li>
+                                <li><strong>Browser Extensions:</strong> Install CORS-disabling extensions for development</li>
+                                <li><strong>Debug Tab:</strong> Use our comprehensive debugging tools to diagnose issues</li>
+                            </ul>
+                            <p><strong>Tip:</strong> If you're experiencing issues, switch to the Debug tab for detailed logging and testing.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Debug Tab Content -->
+        <div id="debug-tab" class="tab-content">
+            <main class="debug-content">
+                <!-- API Parameter Builder -->
+                <div class="card debug-card">
+                    <div class="card__header">
+                        <h3>API Parameter Builder</h3>
+                    </div>
+                    <div class="card__body">
+                        <div class="debug-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="debug-from" class="form-label">From Station Code</label>
+                                    <input type="text" id="debug-from" class="form-control" placeholder="e.g., EUS">
+                                </div>
+                                <div class="form-group">
+                                    <label for="debug-to" class="form-label">To Station Code</label>
+                                    <input type="text" id="debug-to" class="form-control" placeholder="e.g., BTN">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="debug-method" class="form-label">API Method</label>
+                                    <select id="debug-method" class="form-control">
+                                        <option value="direct">Direct API</option>
+                                        <option value="proxy1">CORS Proxy 1</option>
+                                        <option value="proxy2">CORS Proxy 2</option>
+                                        <option value="proxy3">CORS Proxy 3</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <button id="test-api" class="btn btn--primary">Test API Call</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="url-display">
+                            <label class="form-label">Generated API URL:</label>
+                            <div class="url-container">
+                                <code id="api-url-display">Enter station codes to see API URL</code>
+                                <button id="copy-url" class="btn btn--secondary btn--sm">Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="external-links">
+                            <label class="form-label">Test Externally:</label>
+                            <div class="link-buttons">
+                                <a id="rtt-website-link" href="#" target="_blank" class="btn btn--outline btn--sm">RealTimeTrains Website</a>
+                                <a href="https://api.rtt.io" target="_blank" class="btn btn--outline btn--sm">RTT API Docs</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request/Response Logger -->
+                <div class="card debug-card">
+                    <div class="card__header">
+                        <div class="debug-header">
+                            <h3>API Request/Response Log</h3>
+                            <button id="clear-log" class="btn btn--secondary btn--sm">Clear Log</button>
                         </div>
                     </div>
                     <div class="card__body">
-                        <div id="loading-indicator" class="loading-indicator hidden">
-                            <div class="spinner"></div>
-                            <p>Searching for trains...</p>
+                        <div id="debug-log" class="debug-log">
+                            <div class="log-empty">No API calls logged yet. Make a request to see detailed information.</div>
                         </div>
-                        <div id="train-results" class="train-results"></div>
-                        <div id="error-message" class="error-message hidden"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- CORS Help Section -->
-            <div class="card help-card">
-                <div class="card__header">
-                    <h3>Need Help with CORS?</h3>
-                </div>
-                <div class="card__body">
-                    <div class="help-content">
-                        <p><strong>What is CORS?</strong> Cross-Origin Resource Sharing (CORS) is a browser security feature that can block API requests from web applications.</p>
-                        <p><strong>Solutions:</strong></p>
-                        <ul>
-                            <li><strong>CORS Proxies:</strong> Use proxy services to bypass CORS restrictions</li>
-                            <li><strong>Browser Extensions:</strong> Install CORS-disabling extensions for development</li>
-                            <li><strong>Sample Data:</strong> Use offline data when live API is unavailable</li>
-                        </ul>
-                        <p><strong>Tip:</strong> If direct API access fails, try switching to a different CORS proxy above.</p>
+                <!-- Error Diagnostics -->
+                <div class="card debug-card">
+                    <div class="card__header">
+                        <h3>Error Diagnostics</h3>
+                    </div>
+                    <div class="card__body">
+                        <div id="diagnostics-content" class="diagnostics-content">
+                            <div class="diagnostic-section">
+                                <h4>Common Issues & Solutions:</h4>
+                                <div class="diagnostic-item">
+                                    <div class="diagnostic-error">CORS Error</div>
+                                    <div class="diagnostic-solution">Browser blocks cross-origin requests. Try using a CORS proxy or browser extension.</div>
+                                </div>
+                                <div class="diagnostic-item">
+                                    <div class="diagnostic-error">Network Error</div>
+                                    <div class="diagnostic-solution">Check internet connection and API availability.</div>
+                                </div>
+                                <div class="diagnostic-item">
+                                    <div class="diagnostic-error">401 Unauthorized</div>
+                                    <div class="diagnostic-solution">API credentials may be invalid or expired.</div>
+                                </div>
+                                <div class="diagnostic-item">
+                                    <div class="diagnostic-error">Proxy Timeout</div>
+                                    <div class="diagnostic-solution">CORS proxy service may be down. Try a different proxy method.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </main>
+
+                <!-- Network Timing -->
+                <div class="card debug-card">
+                    <div class="card__header">
+                        <h3>Network Performance</h3>
+                    </div>
+                    <div class="card__body">
+                        <div id="timing-info" class="timing-info">
+                            <div class="timing-empty">Make an API request to see network timing information.</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
 
     <script src="app.js"></script>

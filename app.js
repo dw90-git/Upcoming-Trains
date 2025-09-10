@@ -1,4 +1,4 @@
-// Enhanced Train Tracker with CORS Support
+// Enhanced Train Tracker with Debug Tools - FIXED VERSION
 class TrainTracker {
     constructor() {
         this.stations = [
@@ -26,6 +26,7 @@ class TrainTracker {
         };
 
         this.corsProxies = {
+            direct: "",
             proxy1: "https://cors-anywhere.herokuapp.com/",
             proxy2: "https://api.allorigins.win/get?url=",
             proxy3: "https://api.codetabs.com/v1/proxy?quest="
@@ -131,18 +132,23 @@ class TrainTracker {
 
         this.currentFromStation = null;
         this.currentToStation = null;
-        this.currentApiMethod = 'sample'; // Default to sample for testing
+        this.currentApiMethod = 'proxy2'; // Default to proxy2
         this.hideTimeoutId = null;
+        this.debugLog = [];
         
         this.init();
     }
 
     init() {
         this.bindEvents();
+        this.bindDebugEvents();
         this.updateDataSourceStatus('Ready to search');
     }
 
     bindEvents() {
+        // Tab navigation
+        this.bindTabEvents();
+
         // API method selection
         const apiMethodSelect = document.getElementById('api-method');
         if (apiMethodSelect) {
@@ -196,10 +202,414 @@ class TrainTracker {
         }
     }
 
+    bindTabEvents() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
+                
+                // Remove active classes
+                tabButtons.forEach(btn => btn.classList.remove('tab-button--active'));
+                tabContents.forEach(content => content.classList.remove('tab-content--active'));
+                
+                // Add active classes
+                e.target.classList.add('tab-button--active');
+                const targetContent = document.getElementById(`${targetTab}-tab`);
+                if (targetContent) {
+                    targetContent.classList.add('tab-content--active');
+                }
+            });
+        });
+    }
+
+    bindDebugEvents() {
+        // Debug form inputs
+        const debugFrom = document.getElementById('debug-from');
+        const debugTo = document.getElementById('debug-to');
+        const debugMethod = document.getElementById('debug-method');
+        
+        if (debugFrom) debugFrom.addEventListener('input', () => this.updateDebugUrl());
+        if (debugTo) debugTo.addEventListener('input', () => this.updateDebugUrl());
+        if (debugMethod) debugMethod.addEventListener('change', () => this.updateDebugUrl());
+
+        // Test API button
+        const testApiButton = document.getElementById('test-api');
+        if (testApiButton) {
+            testApiButton.addEventListener('click', () => this.testApiCall());
+        }
+
+        // Copy URL button
+        const copyUrlButton = document.getElementById('copy-url');
+        if (copyUrlButton) {
+            copyUrlButton.addEventListener('click', () => this.copyApiUrl());
+        }
+
+        // Clear log button
+        const clearLogButton = document.getElementById('clear-log');
+        if (clearLogButton) {
+            clearLogButton.addEventListener('click', () => this.clearDebugLog());
+        }
+
+        // Initialize debug URL display
+        this.updateDebugUrl();
+    }
+
+    updateDebugUrl() {
+        const debugFrom = document.getElementById('debug-from');
+        const debugTo = document.getElementById('debug-to');
+        const debugMethod = document.getElementById('debug-method');
+        const urlDisplay = document.getElementById('api-url-display');
+        const rttLink = document.getElementById('rtt-website-link');
+
+        if (!debugFrom || !debugTo || !debugMethod || !urlDisplay) return;
+
+        const fromCode = debugFrom.value.trim().toUpperCase();
+        const toCode = debugTo.value.trim().toUpperCase();
+        const method = debugMethod.value;
+
+        if (fromCode && toCode) {
+            const baseUrl = this.apiConfig.baseUrl
+                .replace('{from}', fromCode)
+                .replace('{to}', toCode);
+            
+            let finalUrl = baseUrl;
+            const proxy = this.corsProxies[method];
+            
+            if (method === 'proxy2') {
+                finalUrl = proxy + encodeURIComponent(baseUrl);
+            } else if (proxy) {
+                finalUrl = proxy + baseUrl;
+            }
+
+            urlDisplay.textContent = finalUrl;
+
+            // Update RealTimeTrains link - FIXED: properly set href
+            if (rttLink) {
+                const rttUrl = `https://www.realtimetrains.co.uk/search/detailed/gb-nr:${fromCode}/${toCode}`;
+                rttLink.href = rttUrl;
+                rttLink.style.display = 'inline-block'; // Show the link
+                rttLink.target = '_blank'; // Ensure it opens in new tab
+            }
+        } else {
+            urlDisplay.textContent = 'Enter station codes to see API URL';
+            if (rttLink) {
+                rttLink.style.display = 'none'; // Hide the link
+            }
+        }
+    }
+
+    async testApiCall() {
+        const debugFrom = document.getElementById('debug-from');
+        const debugTo = document.getElementById('debug-to');
+        const debugMethod = document.getElementById('debug-method');
+
+        if (!debugFrom?.value.trim() || !debugTo?.value.trim()) {
+            this.addDebugLogEntry('ERROR', 'Manual Test', '', 0, 'Please enter both station codes', null, new Error('Missing station codes'));
+            return;
+        }
+
+        const fromCode = debugFrom.value.trim().toUpperCase();
+        const toCode = debugTo.value.trim().toUpperCase();
+        const method = debugMethod.value;
+
+        const startTime = performance.now();
+
+        try {
+            const url = this.buildApiUrl(fromCode, toCode);
+            const headers = this.buildHeaders();
+            
+            let fetchUrl = url;
+            let options = { 
+                headers,
+                mode: 'cors' // Explicitly set CORS mode
+            };
+
+            // Apply CORS proxy
+            if (method === 'proxy1') {
+                fetchUrl = this.corsProxies.proxy1 + url;
+            } else if (method === 'proxy2') {
+                fetchUrl = this.corsProxies.proxy2 + encodeURIComponent(url);
+                options = { mode: 'cors' }; // Remove custom headers for allorigins
+            } else if (method === 'proxy3') {
+                fetchUrl = this.corsProxies.proxy3 + encodeURIComponent(url);
+                options = { mode: 'cors' }; // Remove custom headers for codetabs
+            }
+
+            // Log the attempt
+            this.addDebugLogEntry(
+                'GET',
+                `Manual Test (${method})`,
+                fetchUrl,
+                0,
+                'Attempting request...',
+                null,
+                null,
+                0
+            );
+
+            const response = await fetch(fetchUrl, options);
+            const endTime = performance.now();
+            const duration = Math.round(endTime - startTime);
+
+            let data = null;
+            let responseText = '';
+            
+            try {
+                const rawResponse = await response.text();
+                responseText = rawResponse;
+                
+                // Try to parse as JSON
+                data = JSON.parse(rawResponse);
+                
+                // Handle proxy response formats
+                if (method === 'proxy2' && data.contents) {
+                    data = JSON.parse(data.contents);
+                    responseText = JSON.stringify(data, null, 2);
+                }
+            } catch (e) {
+                // If JSON parsing fails, use raw text
+                data = responseText || 'No response data';
+            }
+
+            this.addDebugLogEntry(
+                'GET',
+                `Manual Test (${method})`,
+                fetchUrl,
+                response.status,
+                response.ok ? 'Success' : `HTTP ${response.status} ${response.statusText}`,
+                data,
+                response.ok ? null : new Error(`HTTP ${response.status}`),
+                duration
+            );
+
+            this.updateNetworkTiming({
+                method: method,
+                duration: duration,
+                status: response.status,
+                success: response.ok
+            });
+
+        } catch (error) {
+            const endTime = performance.now();
+            const duration = Math.round(endTime - startTime);
+
+            this.addDebugLogEntry(
+                'ERROR',
+                `Manual Test (${method})`,
+                fetchUrl || url,
+                0,
+                this.classifyError(error),
+                null,
+                error,
+                duration
+            );
+
+            this.updateNetworkTiming({
+                method: method,
+                duration: duration,
+                status: 0,
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    addDebugLogEntry(method, source, url, status, statusText, responseData, error, duration = 0) {
+        const timestamp = new Date().toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            fractionalSecondDigits: 3
+        });
+
+        const logEntry = {
+            timestamp,
+            method,
+            source,
+            url,
+            status,
+            statusText,
+            responseData,
+            error,
+            duration
+        };
+
+        this.debugLog.unshift(logEntry);
+        
+        // Limit log size to prevent memory issues
+        if (this.debugLog.length > 50) {
+            this.debugLog = this.debugLog.slice(0, 50);
+        }
+        
+        this.updateDebugLogDisplay();
+    }
+
+    updateDebugLogDisplay() {
+        const logContainer = document.getElementById('debug-log');
+        if (!logContainer) return;
+
+        if (this.debugLog.length === 0) {
+            logContainer.innerHTML = '<div class="log-empty">No API calls logged yet. Make a request to see detailed information.</div>';
+            return;
+        }
+
+        const logHTML = this.debugLog.map(entry => this.renderLogEntry(entry)).join('');
+        logContainer.innerHTML = logHTML;
+
+        // Add click handlers for response expansion
+        logContainer.querySelectorAll('.log-response-header').forEach(header => {
+            header.addEventListener('click', (e) => {
+                const content = header.nextElementSibling;
+                if (content && content.classList.contains('log-response-content')) {
+                    const isHidden = content.style.display === 'none';
+                    content.style.display = isHidden ? 'block' : 'none';
+                    const arrow = header.querySelector('.arrow');
+                    if (arrow) {
+                        arrow.textContent = isHidden ? '▼' : '▶';
+                    }
+                }
+            });
+        });
+    }
+
+    renderLogEntry(entry) {
+        const isError = entry.error || entry.status >= 400;
+        const methodClass = isError ? 'log-method--error' : 'log-method--get';
+        const statusClass = entry.status >= 200 && entry.status < 300 ? 'status-code--success' : 'status-code--error';
+
+        let responseContent = '';
+        if (entry.error) {
+            responseContent = `<div class="log-error">${entry.error.message || entry.error}</div>`;
+        } else if (entry.responseData) {
+            const responseText = typeof entry.responseData === 'string' 
+                ? entry.responseData 
+                : JSON.stringify(entry.responseData, null, 2);
+            
+            responseContent = `
+                <div class="log-response">
+                    <div class="log-response-header">
+                        <span class="arrow">▶</span>
+                        Response Data (${responseText.length} chars)
+                    </div>
+                    <div class="log-response-content" style="display: none;">${responseText}</div>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="log-entry">
+                <div class="log-timestamp">${entry.timestamp}</div>
+                <div>
+                    <span class="log-method ${methodClass}">${entry.method}</span>
+                    ${entry.source}
+                </div>
+                <div class="log-url">${entry.url}</div>
+                <div class="log-status">
+                    <span class="status-code ${statusClass}">${entry.status || 'ERR'}</span>
+                    <span>${entry.statusText}</span>
+                    <span class="log-timing">${entry.duration}ms</span>
+                </div>
+                ${responseContent}
+            </div>
+        `;
+    }
+
+    updateNetworkTiming(metrics) {
+        const timingContainer = document.getElementById('timing-info');
+        if (!timingContainer) return;
+
+        const timingHTML = `
+            <div class="timing-metrics">
+                <div class="timing-metric">
+                    <div class="timing-label">Request Time</div>
+                    <div class="timing-value">${metrics.duration}ms</div>
+                </div>
+                <div class="timing-metric">
+                    <div class="timing-label">Method</div>
+                    <div class="timing-value">${metrics.method}</div>
+                </div>
+                <div class="timing-metric">
+                    <div class="timing-label">Status</div>
+                    <div class="timing-value">${metrics.success ? 'Success' : 'Failed'}</div>
+                </div>
+                <div class="timing-metric">
+                    <div class="timing-label">HTTP Code</div>
+                    <div class="timing-value">${metrics.status || 'N/A'}</div>
+                </div>
+            </div>
+            ${metrics.error ? `<div class="log-error" style="margin-top: 16px;">${metrics.error}</div>` : ''}
+        `;
+
+        timingContainer.innerHTML = timingHTML;
+    }
+
+    classifyError(error) {
+        const message = error.message.toLowerCase();
+        
+        if (message.includes('cors') || message.includes('cross-origin')) {
+            return 'CORS Error - Request blocked by browser';
+        } else if (message.includes('network') || message.includes('fetch')) {
+            return 'Network Error - Connection failed';
+        } else if (message.includes('timeout')) {
+            return 'Timeout Error - Request took too long';
+        } else if (message.includes('unauthorized') || message.includes('401')) {
+            return 'Authorization Error - Invalid credentials';
+        } else if (message.includes('failed to fetch')) {
+            return 'CORS/Network Error - Likely blocked by browser security';
+        } else {
+            return `Error - ${error.message}`;
+        }
+    }
+
+    copyApiUrl() {
+        const urlDisplay = document.getElementById('api-url-display');
+        if (!urlDisplay) return;
+
+        const url = urlDisplay.textContent;
+        if (url === 'Enter station codes to see API URL') return;
+
+        navigator.clipboard.writeText(url).then(() => {
+            const button = document.getElementById('copy-url');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        }).catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const button = document.getElementById('copy-url');
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
+        });
+    }
+
+    clearDebugLog() {
+        this.debugLog = [];
+        this.updateDebugLogDisplay();
+        
+        // Clear timing info
+        const timingContainer = document.getElementById('timing-info');
+        if (timingContainer) {
+            timingContainer.innerHTML = '<div class="timing-empty">Make an API request to see network timing information.</div>';
+        }
+    }
+
+    // Original methods with debug logging integration
     handleStationInput(event, type) {
         const query = event.target.value.trim();
         
-        // Clear any pending hide timeout
         if (this.hideTimeoutId) {
             clearTimeout(this.hideTimeoutId);
             this.hideTimeoutId = null;
@@ -252,7 +662,6 @@ class TrainTracker {
         suggestionsContainer.innerHTML = suggestionsHTML;
         suggestionsContainer.classList.remove('hidden');
 
-        // Add click handlers
         suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
             if (item.dataset.station) {
                 item.addEventListener('mousedown', (e) => {
@@ -373,14 +782,12 @@ class TrainTracker {
         
         if (!searchButton || !fromInput || !toInput) return;
         
-        // Check if we have text in both fields and they are different
         const hasFromText = fromInput.value.trim().length > 0;
         const hasToText = toInput.value.trim().length > 0;
         const isDifferent = fromInput.value.trim() !== toInput.value.trim();
         
         const isValid = hasFromText && hasToText && isDifferent;
         
-        // Also check if we have valid station objects for better validation
         if (isValid && this.currentFromStation && this.currentToStation) {
             searchButton.disabled = this.currentFromStation.code === this.currentToStation.code;
         } else {
@@ -397,7 +804,6 @@ class TrainTracker {
             return;
         }
 
-        // If we don't have station objects, try to find them
         if (!this.currentFromStation) {
             this.currentFromStation = this.findStationByName(fromInput.value.trim());
         }
@@ -413,15 +819,28 @@ class TrainTracker {
         this.showLoading();
         this.showResults();
 
+        const startTime = performance.now();
+
         try {
             let data;
             
             if (this.currentApiMethod === 'sample') {
-                // Create sample data for the selected route
                 data = this.createSampleDataForRoute(this.currentFromStation, this.currentToStation);
                 this.updateDataSourceStatus('Using sample data', 'fallback');
+                
+                // Log sample data usage
+                this.addDebugLogEntry(
+                    'SAMPLE',
+                    'Train Search',
+                    'Sample data',
+                    200,
+                    'Sample data loaded',
+                    data,
+                    null,
+                    5
+                );
             } else {
-                data = await this.fetchTrainData();
+                data = await this.fetchTrainDataWithLogging(startTime);
                 this.updateDataSourceStatus('Live data loaded successfully', 'live');
             }
 
@@ -430,18 +849,90 @@ class TrainTracker {
         } catch (error) {
             console.error('Error fetching train data:', error);
             
-            // Fallback to sample data
             if (this.currentApiMethod !== 'sample') {
                 this.updateDataSourceStatus('Live data failed - using sample data', 'fallback');
                 const fallbackData = this.createSampleDataForRoute(this.currentFromStation, this.currentToStation);
                 this.displayTrains(fallbackData);
                 this.updateLastUpdated();
-                this.showError('Could not fetch live data. Showing sample data instead. Try a different API method or check CORS settings.');
+                this.showError('Could not fetch live data. Showing sample data instead. Check the Debug tab for details.');
             } else {
                 this.showError('Failed to load train data');
             }
         } finally {
             this.hideLoading();
+        }
+    }
+
+    async fetchTrainDataWithLogging(startTime) {
+        const url = this.buildApiUrl(this.currentFromStation.code, this.currentToStation.code);
+        const headers = this.buildHeaders();
+
+        let fetchUrl = url;
+        let options = { headers };
+
+        if (this.currentApiMethod === 'proxy1') {
+            fetchUrl = this.corsProxies.proxy1 + url;
+        } else if (this.currentApiMethod === 'proxy2') {
+            fetchUrl = this.corsProxies.proxy2 + encodeURIComponent(url);
+            options = {};
+        } else if (this.currentApiMethod === 'proxy3') {
+            fetchUrl = this.corsProxies.proxy3 + encodeURIComponent(url);
+            options = {};
+        }
+
+        try {
+            const response = await fetch(fetchUrl, options);
+            const endTime = performance.now();
+            const duration = Math.round(endTime - startTime);
+            
+            if (!response.ok) {
+                this.addDebugLogEntry(
+                    'GET',
+                    'Train Search',
+                    fetchUrl,
+                    response.status,
+                    `HTTP ${response.status} ${response.statusText}`,
+                    null,
+                    new Error(`HTTP ${response.status}`),
+                    duration
+                );
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            let data = await response.json();
+            
+            if (this.currentApiMethod === 'proxy2' && data.contents) {
+                data = JSON.parse(data.contents);
+            }
+
+            this.addDebugLogEntry(
+                'GET',
+                'Train Search',
+                fetchUrl,
+                response.status,
+                'Success',
+                data,
+                null,
+                duration
+            );
+
+            return data;
+        } catch (error) {
+            const endTime = performance.now();
+            const duration = Math.round(endTime - startTime);
+            
+            this.addDebugLogEntry(
+                'ERROR',
+                'Train Search',
+                fetchUrl,
+                0,
+                this.classifyError(error),
+                null,
+                error,
+                duration
+            );
+
+            throw error;
         }
     }
 
@@ -473,41 +964,13 @@ class TrainTracker {
         };
     }
 
-    async fetchTrainData() {
-        const url = this.buildApiUrl();
-        const headers = this.buildHeaders();
-
-        let fetchUrl = url;
-        let options = { headers };
-
-        // Apply CORS proxy if needed
-        if (this.currentApiMethod === 'proxy1') {
-            fetchUrl = this.corsProxies.proxy1 + url;
-        } else if (this.currentApiMethod === 'proxy2') {
-            fetchUrl = this.corsProxies.proxy2 + encodeURIComponent(url);
-            options = {}; // AllOrigins doesn't support custom headers
-        }
-
-        const response = await fetch(fetchUrl, options);
+    buildApiUrl(fromCode = null, toCode = null) {
+        const from = fromCode || this.currentFromStation?.code;
+        const to = toCode || this.currentToStation?.code;
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        let data = await response.json();
-        
-        // Handle AllOrigins response format
-        if (this.currentApiMethod === 'proxy2' && data.contents) {
-            data = JSON.parse(data.contents);
-        }
-
-        return data;
-    }
-
-    buildApiUrl() {
         return this.apiConfig.baseUrl
-            .replace('{from}', this.currentFromStation.code)
-            .replace('{to}', this.currentToStation.code);
+            .replace('{from}', from)
+            .replace('{to}', to);
     }
 
     buildHeaders() {
@@ -528,7 +991,6 @@ class TrainTracker {
             return;
         }
         
-        // Clear any previous errors
         if (errorElement) {
             errorElement.classList.add('hidden');
         }
@@ -549,7 +1011,6 @@ class TrainTracker {
         const londonOvergroundEnabled = londonOvergroundCheckbox ? londonOvergroundCheckbox.checked : true;
         let services = data.services;
 
-        // Filter London Overground if disabled
         if (!londonOvergroundEnabled) {
             services = services.filter(service => 
                 service.atocCode !== 'LO' && 
@@ -640,7 +1101,7 @@ class TrainTracker {
         const arrMinutes = parseInt(arrStr.slice(0, 2)) * 60 + parseInt(arrStr.slice(2));
         
         let duration = arrMinutes - depMinutes;
-        if (duration < 0) duration += 24 * 60; // Handle next day arrival
+        if (duration < 0) duration += 24 * 60;
         
         const hours = Math.floor(duration / 60);
         const minutes = duration % 60;
@@ -681,11 +1142,8 @@ class TrainTracker {
         if (!statusElement) return;
         
         statusElement.textContent = message;
-        
-        // Reset classes
         statusElement.className = 'status';
         
-        // Add appropriate class
         switch (type) {
             case 'live':
                 statusElement.classList.add('status--live');
@@ -716,6 +1174,6 @@ class TrainTracker {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing Train Tracker...');
+    console.log('Initializing Enhanced Train Tracker with Debug Tools...');
     new TrainTracker();
 });
