@@ -1,575 +1,721 @@
-// API Configuration
-const API_CONFIG = {
-    baseUrl: 'https://api.rtt.io/api/v1/json/search/WFJ/to/EUS',
-    username: 'rttapi_daz4590',
-    password: '4b886b4940dfd3dbe7b659004994360ec8a34cbc',
-    timeout: 10000
-};
+// Enhanced Train Tracker with CORS Support
+class TrainTracker {
+    constructor() {
+        this.stations = [
+            {"name": "London Euston", "code": "EUS", "region": "London"},
+            {"name": "Watford Junction", "code": "WFJ", "region": "Hertfordshire"},
+            {"name": "London King's Cross", "code": "KGX", "region": "London"},
+            {"name": "London Paddington", "code": "PAD", "region": "London"},
+            {"name": "London Victoria", "code": "VIC", "region": "London"},
+            {"name": "Birmingham New Street", "code": "BHM", "region": "West Midlands"},
+            {"name": "Manchester Piccadilly", "code": "MAN", "region": "Greater Manchester"},
+            {"name": "Reading", "code": "RDG", "region": "Berkshire"},
+            {"name": "Brighton", "code": "BTN", "region": "East Sussex"},
+            {"name": "Oxford", "code": "OXF", "region": "Oxfordshire"},
+            {"name": "Cambridge", "code": "CBG", "region": "Cambridgeshire"},
+            {"name": "York", "code": "YRK", "region": "North Yorkshire"},
+            {"name": "Edinburgh", "code": "EDB", "region": "Scotland"},
+            {"name": "Glasgow Central", "code": "GLC", "region": "Scotland"},
+            {"name": "Liverpool Lime Street", "code": "LIV", "region": "Merseyside"}
+        ];
 
-// Fallback train data
-const FALLBACK_TRAINS = [
-    {
-        id: "AV_001",
-        departure_time: "17:15",
-        expected_time: "17:17", 
-        platform: "7",
-        operator: "Avanti West Coast",
-        destination: "London Euston",
-        train_type: "Class 350",
-        formation: "4-car",
-        journey_time: "22m",
-        status: "Delayed 2m",
-        cars: [
-            {number: 1, type: "DMS", doors: ["A", "B"], features: ["First class"]},
-            {number: 2, type: "MS", doors: ["A", "B"], features: ["Standard class"]},
-            {number: 3, type: "MS", doors: ["A", "B"], features: ["Standard class", "Shop"]},
-            {number: 4, type: "DMS", doors: ["A", "B"], features: ["Standard class"]}
-        ]
-    },
-    {
-        id: "WMT_001",
-        departure_time: "17:32",
-        expected_time: "17:32",
-        platform: "8", 
-        operator: "West Midlands Trains",
-        destination: "London Euston",
-        train_type: "Class 350",
-        formation: "5-car",
-        journey_time: "24m",
-        status: "On time",
-        cars: [
-            {number: 1, type: "DMS", doors: ["A", "B"], features: ["Standard class"]},
-            {number: 2, type: "MS", doors: ["A", "B"], features: ["Standard class"]},
-            {number: 3, type: "MS", doors: ["A", "B"], features: ["Quiet coach"]},
-            {number: 4, type: "MS", doors: ["A", "B"], features: ["Standard class"]},
-            {number: 5, type: "DMS", doors: ["A", "B"], features: ["Standard class"]}
-        ]
-    },
-    {
-        id: "LO_001",
-        departure_time: "17:45",
-        expected_time: "17:45",
-        platform: "2",
-        operator: "London Overground",
-        destination: "London Euston", 
-        train_type: "Class 710",
-        formation: "4-car",
-        journey_time: "28m",
-        status: "On time",
-        cars: [
-            {number: 1, type: "DMS2", doors: ["A", "B", "C"], features: ["Standard seating"]},
-            {number: 2, type: "PMS(W)", doors: ["A", "B", "C"], features: ["Wheelchair space", "Accessible toilet"]},
-            {number: 3, type: "MS1", doors: ["A", "B", "C"], features: ["Cycle storage"]},
-            {number: 4, type: "DMS1", doors: ["A", "B", "C"], features: ["Standard seating"]}
-        ]
+        this.apiConfig = {
+            baseUrl: "https://api.rtt.io/api/v1/json/search/{from}/to/{to}",
+            username: "rttapi_daz4590",
+            password: "4b886b4940dfd3dbe7b659004994360ec8a34cbc"
+        };
+
+        this.corsProxies = {
+            proxy1: "https://cors-anywhere.herokuapp.com/",
+            proxy2: "https://api.allorigins.win/get?url=",
+            proxy3: "https://api.codetabs.com/v1/proxy?quest="
+        };
+
+        this.sampleData = {
+            services: [
+                {
+                    locationDetail: {
+                        origin: [{ description: "London Euston", crs: "EUS" }],
+                        destination: [{ description: "Brighton", crs: "BTN" }]
+                    },
+                    serviceUid: "P12345",
+                    runDate: "2025-09-10",
+                    trainIdentity: "1A23",
+                    atocCode: "LO",
+                    atocName: "London Overground",
+                    serviceType: "train",
+                    isPassenger: true,
+                    operator: "London Overground",
+                    platform: "2",
+                    locations: [
+                        {
+                            crs: "EUS",
+                            description: "London Euston",
+                            gbttBookedDeparture: "1930",
+                            realtimeDeparture: "1932",
+                            platform: "2"
+                        },
+                        {
+                            crs: "BTN",
+                            description: "Brighton",
+                            gbttBookedArrival: "2115",
+                            realtimeArrival: "2117",
+                            platform: "4"
+                        }
+                    ]
+                },
+                {
+                    locationDetail: {
+                        origin: [{ description: "London Euston", crs: "EUS" }],
+                        destination: [{ description: "Brighton", crs: "BTN" }]
+                    },
+                    serviceUid: "P12346",
+                    runDate: "2025-09-10",
+                    trainIdentity: "1B45",
+                    atocCode: "GWR",
+                    atocName: "Great Western Railway",
+                    serviceType: "train",
+                    isPassenger: true,
+                    operator: "Great Western Railway",
+                    platform: "3",
+                    locations: [
+                        {
+                            crs: "EUS",
+                            description: "London Euston",
+                            gbttBookedDeparture: "1945",
+                            realtimeDeparture: "1945",
+                            platform: "3"
+                        },
+                        {
+                            crs: "BTN",
+                            description: "Brighton",
+                            gbttBookedArrival: "2130",
+                            realtimeArrival: "2128",
+                            platform: "2"
+                        }
+                    ]
+                },
+                {
+                    locationDetail: {
+                        origin: [{ description: "London Euston", crs: "EUS" }],
+                        destination: [{ description: "Brighton", crs: "BTN" }]
+                    },
+                    serviceUid: "P12347",
+                    runDate: "2025-09-10",
+                    trainIdentity: "1C67",
+                    atocCode: "SN",
+                    atocName: "Southern",
+                    serviceType: "train",
+                    isPassenger: true,
+                    operator: "Southern",
+                    platform: "5",
+                    locations: [
+                        {
+                            crs: "EUS",
+                            description: "London Euston",
+                            gbttBookedDeparture: "2000",
+                            realtimeDeparture: "2002",
+                            platform: "5"
+                        },
+                        {
+                            crs: "BTN",
+                            description: "Brighton",
+                            gbttBookedArrival: "2145",
+                            realtimeArrival: "2147",
+                            platform: "6"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        this.currentFromStation = null;
+        this.currentToStation = null;
+        this.currentApiMethod = 'sample'; // Default to sample for testing
+        this.hideTimeoutId = null;
+        
+        this.init();
     }
-];
 
-const OPERATOR_COLORS = {
-    "London Overground": "#E87722",
-    "Avanti West Coast": "#004C8C",
-    "West Midlands Trains": "#004C8C"
-};
-
-// Application state
-let currentTrains = [];
-let logEntries = [];
-let showOverground = false;
-let apiCallCount = 0;
-
-// DOM elements
-const elements = {};
-
-// Initialize app
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing app...');
-    initializeElements();
-    setupEventListeners();
-    addLogEntry('info', 'Application initialized successfully');
-    loadTrainData();
-});
-
-function initializeElements() {
-    elements.overgroundToggle = document.getElementById('overground-toggle');
-    elements.refreshBtn = document.getElementById('refresh-btn');
-    elements.apiStatus = document.getElementById('api-status');
-    elements.lastUpdated = document.getElementById('last-updated');
-    elements.trainCount = document.getElementById('train-count');
-    elements.loading = document.getElementById('loading');
-    elements.errorState = document.getElementById('error-state');
-    elements.trainsContainer = document.getElementById('trains-container');
-    elements.logToggle = document.getElementById('log-toggle');
-    elements.logContent = document.getElementById('log-content');
-    elements.logBadge = document.getElementById('log-badge');
-    elements.logEntries = document.getElementById('log-entries');
-    elements.clearLogBtn = document.getElementById('clear-log');
-    elements.retryBtn = document.getElementById('retry-btn');
-    elements.errorMessage = document.getElementById('error-message');
-    
-    console.log('Elements initialized:', Object.keys(elements).length, 'elements found');
-}
-
-function setupEventListeners() {
-    if (elements.overgroundToggle) {
-        elements.overgroundToggle.addEventListener('change', handleOvergroundToggle);
-        console.log('Overground toggle listener added');
+    init() {
+        this.bindEvents();
+        this.updateDataSourceStatus('Ready to search');
     }
-    
-    if (elements.refreshBtn) {
-        elements.refreshBtn.addEventListener('click', handleRefresh);
-        console.log('Refresh button listener added');
-    }
-    
-    if (elements.logToggle) {
-        elements.logToggle.addEventListener('click', toggleLog);
-        console.log('Log toggle listener added');
-    }
-    
-    if (elements.clearLogBtn) {
-        elements.clearLogBtn.addEventListener('click', clearLog);
-        console.log('Clear log button listener added');
-    }
-    
-    if (elements.retryBtn) {
-        elements.retryBtn.addEventListener('click', handleRefresh);
-        console.log('Retry button listener added');
-    }
-}
 
-function handleOvergroundToggle(event) {
-    showOverground = event.target.checked;
-    console.log('Overground toggle changed:', showOverground);
-    addLogEntry('info', `London Overground filter ${showOverground ? 'enabled' : 'disabled'}`);
-    renderTrains();
-}
-
-function handleRefresh() {
-    console.log('Refresh button clicked');
-    addLogEntry('info', 'Manual refresh triggered');
-    loadTrainData();
-}
-
-function toggleLog() {
-    console.log('Log toggle clicked');
-    const isHidden = elements.logContent.classList.contains('hidden');
-    console.log('Log content currently hidden:', isHidden);
-    
-    if (isHidden) {
-        elements.logContent.classList.remove('hidden');
-        elements.logToggle.classList.add('expanded');
-        console.log('Log expanded');
-    } else {
-        elements.logContent.classList.add('hidden');
-        elements.logToggle.classList.remove('expanded');
-        console.log('Log collapsed');
-    }
-}
-
-function clearLog() {
-    console.log('Clear log clicked');
-    logEntries = [];
-    if (elements.logEntries) {
-        elements.logEntries.innerHTML = '';
-    }
-    updateLogBadge();
-    addLogEntry('info', 'Log cleared');
-}
-
-// API Functions
-async function loadTrainData() {
-    console.log('Loading train data...');
-    showLoading(true);
-    hideError();
-    updateStatus('Connecting...', 'info');
-    
-    const startTime = Date.now();
-    apiCallCount++;
-    
-    try {
-        addLogEntry('info', `API call #${apiCallCount} initiated to ${API_CONFIG.baseUrl}`);
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
-        
-        const response = await fetch(API_CONFIG.baseUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': 'Basic ' + btoa(API_CONFIG.username + ':' + API_CONFIG.password),
-                'Accept': 'application/json'
-            },
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        const responseTime = Date.now() - startTime;
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        addLogEntry('success', `API call #${apiCallCount} successful (${responseTime}ms)\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`);
-        
-        currentTrains = parseApiResponse(data);
-        
-        if (currentTrains.length === 0) {
-            addLogEntry('info', 'No trains found in API response, using fallback data');
-            currentTrains = [...FALLBACK_TRAINS];
-        }
-        
-        updateStatus('Connected', 'success');
-        updateLastUpdated();
-        renderTrains();
-        
-    } catch (error) {
-        const responseTime = Date.now() - startTime;
-        
-        if (error.name === 'AbortError') {
-            addLogEntry('error', `API call #${apiCallCount} timed out after ${API_CONFIG.timeout}ms\nUsing fallback data`);
-        } else {
-            addLogEntry('error', `API call #${apiCallCount} failed (${responseTime}ms): ${error.message}\nUsing fallback data`);
-        }
-        
-        console.error('API Error:', error);
-        
-        currentTrains = [...FALLBACK_TRAINS];
-        updateStatus('Using fallback data', 'warning');
-        updateLastUpdated();
-        renderTrains();
-    }
-    
-    showLoading(false);
-}
-
-function parseApiResponse(data) {
-    try {
-        const trains = [];
-        
-        if (data && data.services && Array.isArray(data.services)) {
-            data.services.slice(0, 10).forEach((service, index) => {
-                const locationDetail = service.locationDetail || {};
-                
-                // Parse time from HHMM to HH:MM format
-                const parseTime = (timeStr) => {
-                    if (!timeStr || typeof timeStr !== 'string') return 'Unknown';
-                    if (timeStr.length === 4) {
-                        return `${timeStr.substring(0, 2)}:${timeStr.substring(2, 4)}`;
-                    }
-                    return timeStr;
-                };
-                
-                const departureTime = parseTime(locationDetail.gbttBookedDeparture || locationDetail.realtimeDeparture);
-                const expectedTime = parseTime(locationDetail.realtimeDeparture || locationDetail.gbttBookedDeparture);
-                
-                const train = {
-                    id: `RTT_${service.serviceUid || index}`,
-                    departure_time: departureTime,
-                    expected_time: expectedTime,
-                    platform: locationDetail.platform || 'TBC',
-                    operator: service.atocName || 'Unknown',
-                    destination: (service.locationDetail?.destination?.[0]?.description) || 'London Euston',
-                    train_type: service.trainIdentity || 'Unknown',
-                    formation: determineFormation(service),
-                    journey_time: calculateJourneyTime(service),
-                    status: getServiceStatus(service),
-                    cars: generateFormationCars(service)
-                };
-                trains.push(train);
+    bindEvents() {
+        // API method selection
+        const apiMethodSelect = document.getElementById('api-method');
+        if (apiMethodSelect) {
+            apiMethodSelect.value = this.currentApiMethod;
+            apiMethodSelect.addEventListener('change', (e) => {
+                this.currentApiMethod = e.target.value;
+                this.updateDataSourceStatus('Method changed - ready to search');
             });
         }
-        
-        return trains;
-    } catch (error) {
-        addLogEntry('error', `Failed to parse API response: ${error.message}`);
-        return [];
-    }
-}
 
-function determineFormation(service) {
-    // Try to extract formation info from various fields
-    if (service.formation && typeof service.formation === 'string') {
-        return service.formation;
-    }
-    
-    // Default formations by operator
-    const operator = service.atocName || '';
-    if (operator.includes('Overground')) {
-        return '4-car';
-    } else if (operator.includes('Avanti') || operator.includes('West Midlands')) {
-        return Math.random() > 0.5 ? '4-car' : '5-car';
-    }
-    
-    return '4-car';
-}
-
-function calculateJourneyTime(service) {
-    try {
-        const locationDetail = service.locationDetail || {};
-        const departure = locationDetail.gbttBookedDeparture;
-        const arrival = locationDetail.gbttBookedArrival;
+        // Station autocomplete
+        const fromInput = document.getElementById('from-station');
+        const toInput = document.getElementById('to-station');
         
-        if (departure && arrival) {
-            const depMins = parseInt(departure.substring(0, 2)) * 60 + parseInt(departure.substring(2, 4));
-            const arrMins = parseInt(arrival.substring(0, 2)) * 60 + parseInt(arrival.substring(2, 4));
-            const diff = arrMins - depMins;
-            return `${diff}m`;
-        }
-    } catch (e) {
-        // Ignore parsing errors
-    }
-    
-    return ['22m', '24m', '26m', '28m'][Math.floor(Math.random() * 4)];
-}
-
-function getServiceStatus(service) {
-    const locationDetail = service.locationDetail || {};
-    
-    // Check for cancellation
-    if (locationDetail.cancelReasonCode || locationDetail.cancelReasonShortText) {
-        return 'Cancelled';
-    }
-    
-    // Check for delay
-    if (locationDetail.realtimeDeparture && locationDetail.gbttBookedDeparture) {
-        const scheduled = locationDetail.gbttBookedDeparture;
-        const actual = locationDetail.realtimeDeparture;
-        
-        if (actual > scheduled) {
-            const schedMins = parseInt(scheduled.substring(0, 2)) * 60 + parseInt(scheduled.substring(2, 4));
-            const actualMins = parseInt(actual.substring(0, 2)) * 60 + parseInt(actual.substring(2, 4));
-            const delayMins = actualMins - schedMins;
-            
-            if (delayMins > 0) {
-                return `Delayed ${delayMins}m`;
-            }
-        }
-    }
-    
-    return 'On time';
-}
-
-function generateFormationCars(service) {
-    const operator = service.atocName || '';
-    const formation = determineFormation(service);
-    const numCars = parseInt(formation.replace(/[^0-9]/g, '')) || 4;
-    const cars = [];
-    
-    const isOverground = operator.includes('Overground');
-    
-    for (let i = 1; i <= Math.min(numCars, 5); i++) {
-        const car = {
-            number: i,
-            type: isOverground ? (i === 1 || i === numCars ? 'DMS' : 'MS') : (i === 1 || i === numCars ? 'DMS' : 'MS'),
-            doors: isOverground ? ['A', 'B', 'C'] : ['A', 'B'],
-            features: []
-        };
-        
-        // Add features based on car position and operator
-        if (isOverground) {
-            switch (i) {
-                case 1:
-                    car.features = ['Standard seating'];
-                    break;
-                case 2:
-                    car.features = ['Wheelchair space', 'Accessible toilet'];
-                    break;
-                case 3:
-                    car.features = ['Cycle storage'];
-                    break;
-                default:
-                    car.features = ['Standard seating'];
-            }
-        } else {
-            if (i === 1 && operator.includes('Avanti')) {
-                car.features = ['First class'];
-            } else if (i === 3) {
-                car.features = ['Standard class', 'Shop'];
-            } else if (i === 2 || i === 4) {
-                car.features = ['Quiet coach'];
-            } else {
-                car.features = ['Standard class'];
-            }
+        if (fromInput) {
+            fromInput.addEventListener('input', (e) => this.handleStationInput(e, 'from'));
+            fromInput.addEventListener('focus', (e) => {
+                if (e.target.value.length > 0) {
+                    this.handleStationInput(e, 'from');
+                }
+            });
+            fromInput.addEventListener('blur', () => {
+                this.hideTimeoutId = setTimeout(() => this.hideSuggestions('from'), 200);
+            });
+            fromInput.addEventListener('keydown', (e) => this.handleKeyDown(e, 'from'));
         }
         
-        cars.push(car);
-    }
-    
-    return cars;
-}
-
-// UI Functions
-function showLoading(show) {
-    if (elements.loading) {
-        elements.loading.classList.toggle('hidden', !show);
-    }
-    if (elements.trainsContainer) {
-        elements.trainsContainer.classList.toggle('hidden', show);
-    }
-}
-
-function hideError() {
-    if (elements.errorState) {
-        elements.errorState.classList.add('hidden');
-    }
-}
-
-function updateStatus(status, type) {
-    if (elements.apiStatus) {
-        elements.apiStatus.textContent = status;
-        elements.apiStatus.className = `status--${type}`;
-    }
-}
-
-function updateLastUpdated() {
-    const now = new Date();
-    if (elements.lastUpdated) {
-        elements.lastUpdated.textContent = now.toLocaleTimeString();
-    }
-}
-
-function renderTrains() {
-    console.log('Rendering trains. Show Overground:', showOverground, 'Total trains:', currentTrains.length);
-    
-    let displayTrains;
-    
-    // Filter based on London Overground toggle
-    if (showOverground) {
-        // Show all trains including London Overground, maximum 2
-        displayTrains = currentTrains.slice(0, 2);
-        console.log('Showing all trains including London Overground');
-    } else {
-        // Hide London Overground trains, show only other operators, maximum 2
-        const filteredTrains = currentTrains.filter(train => {
-            const isOverground = train.operator === 'London Overground';
-            console.log(`Train ${train.operator}: isOverground=${isOverground}`);
-            return !isOverground;
-        });
-        displayTrains = filteredTrains.slice(0, 2);
-        console.log('Filtered out London Overground trains, showing:', displayTrains.length);
-    }
-    
-    if (elements.trainCount) {
-        elements.trainCount.textContent = displayTrains.length;
-    }
-    
-    if (displayTrains.length === 0) {
-        if (elements.trainsContainer) {
-            elements.trainsContainer.innerHTML = '<div class="error-state"><h3>No trains available</h3><p>Try enabling London Overground or refresh the data.</p></div>';
+        if (toInput) {
+            toInput.addEventListener('input', (e) => this.handleStationInput(e, 'to'));
+            toInput.addEventListener('focus', (e) => {
+                if (e.target.value.length > 0) {
+                    this.handleStationInput(e, 'to');
+                }
+            });
+            toInput.addEventListener('blur', () => {
+                this.hideTimeoutId = setTimeout(() => this.hideSuggestions('to'), 200);
+            });
+            toInput.addEventListener('keydown', (e) => this.handleKeyDown(e, 'to'));
         }
-        return;
+
+        // Swap stations
+        const swapButton = document.getElementById('swap-stations');
+        if (swapButton) {
+            swapButton.addEventListener('click', () => this.swapStations());
+        }
+
+        // Search button
+        const searchButton = document.getElementById('search-trains');
+        if (searchButton) {
+            searchButton.addEventListener('click', () => this.searchTrains());
+        }
     }
-    
-    if (elements.trainsContainer) {
-        elements.trainsContainer.innerHTML = displayTrains.map(train => createTrainCard(train)).join('');
+
+    handleStationInput(event, type) {
+        const query = event.target.value.trim();
+        
+        // Clear any pending hide timeout
+        if (this.hideTimeoutId) {
+            clearTimeout(this.hideTimeoutId);
+            this.hideTimeoutId = null;
+        }
+        
+        if (query.length === 0) {
+            this.hideSuggestions(type);
+            this.clearStationSelection(type);
+            return;
+        }
+
+        if (query.length < 2) {
+            return;
+        }
+
+        const suggestions = this.stations.filter(station => 
+            station.name.toLowerCase().includes(query.toLowerCase()) || 
+            station.code.toLowerCase().includes(query.toLowerCase()) ||
+            station.region.toLowerCase().includes(query.toLowerCase())
+        );
+
+        this.showSuggestions(suggestions, type);
+        this.validateInputs();
     }
-    
-    console.log('Rendered', displayTrains.length, 'trains');
-}
 
-function createTrainCard(train) {
-    const isOverground = train.operator === 'London Overground';
-    const operatorColor = OPERATOR_COLORS[train.operator] || '#004C8C';
-    
-    return `
-        <div class="train-card">
-            <div class="train-header">
-                <div class="train-info">
-                    <h3 style="color: ${operatorColor}">${train.operator}</h3>
-                    <div class="train-details">
-                        <span class="train-detail">
-                            <span class="train-operator">${train.train_type}</span>
-                        </span>
-                        <span class="train-detail">📍 ${train.destination}</span>
-                        <span class="train-detail">⏱️ ${train.journey_time}</span>
-                        <span class="train-detail">
-                            <span class="status ${getStatusClass(train.status)}">${train.status}</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="time-info">
-                    <h2 class="departure-time">${train.departure_time}</h2>
-                    <p class="expected-time">Expected: ${train.expected_time}</p>
-                </div>
-                <div class="platform-info">
-                    <p class="platform-label">Platform</p>
-                    <h3 class="platform-number">${train.platform}</h3>
-                </div>
-            </div>
-            <div class="train-formation">
-                <div class="formation-header">
-                    <h4 class="formation-title">Train Formation</h4>
-                    <span class="formation-info">${train.formation} • ${train.cars.length} cars</span>
-                </div>
-                <div class="cars-container">
-                    ${train.cars.map(car => createCarElement(car, isOverground)).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-}
+    showSuggestions(suggestions, type) {
+        const suggestionsContainer = document.getElementById(`${type}-suggestions`);
+        
+        if (!suggestionsContainer) {
+            console.error(`Suggestions container not found for ${type}`);
+            return;
+        }
+        
+        if (suggestions.length === 0) {
+            suggestionsContainer.innerHTML = '<div class="suggestion-item">No stations found</div>';
+            suggestionsContainer.classList.remove('hidden');
+            return;
+        }
 
-function createCarElement(car, isOverground) {
-    const carClass = isOverground ? 'car overground' : 'car';
-    const doorClass = isOverground ? 'door overground' : 'door';
-    
-    return `
-        <div class="${carClass}">
-            <div class="car-number">Car ${car.number}</div>
-            <div class="car-type">${car.type}</div>
-            <div class="car-doors">
-                ${car.doors.map(() => `<div class="${doorClass}"></div>`).join('')}
-            </div>
-            <div class="car-features">
-                ${car.features.map(feature => `<div class="feature">${feature}</div>`).join('')}
-            </div>
-        </div>
-    `;
-}
-
-function getStatusClass(status) {
-    if (status.includes('Delayed') || status.includes('Cancelled')) return 'status--error';
-    if (status.includes('On time')) return 'status--success';
-    return 'status--info';
-}
-
-// Log Functions
-function addLogEntry(type, message) {
-    const timestamp = new Date().toLocaleTimeString();
-    const entry = { type, message, timestamp };
-    
-    logEntries.unshift(entry);
-    
-    // Keep only last 50 entries
-    if (logEntries.length > 50) {
-        logEntries = logEntries.slice(0, 50);
-    }
-    
-    renderLogEntries();
-    updateLogBadge();
-}
-
-function renderLogEntries() {
-    if (logEntries.length === 0) return;
-    
-    if (elements.logEntries) {
-        elements.logEntries.innerHTML = logEntries.map(entry => `
-            <div class="log-entry log-entry--${entry.type}">
-                <div class="log-timestamp">${entry.timestamp}</div>
-                <div class="log-content-text">${entry.message}</div>
+        const suggestionsHTML = suggestions.slice(0, 6).map((station, index) => `
+            <div class="suggestion-item" data-station='${JSON.stringify(station)}' data-index="${index}">
+                <div class="suggestion-name">${station.name}</div>
+                <div style="margin-top: 4px;">
+                    <span class="suggestion-code">${station.code}</span>
+                    <span class="suggestion-region">${station.region}</span>
+                </div>
             </div>
         `).join('');
+
+        suggestionsContainer.innerHTML = suggestionsHTML;
+        suggestionsContainer.classList.remove('hidden');
+
+        // Add click handlers
+        suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+            if (item.dataset.station) {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const station = JSON.parse(item.dataset.station);
+                    this.selectStation(station, type);
+                });
+                
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const station = JSON.parse(item.dataset.station);
+                    this.selectStation(station, type);
+                });
+            }
+        });
+    }
+
+    hideSuggestions(type) {
+        const suggestionsContainer = document.getElementById(`${type}-suggestions`);
+        if (suggestionsContainer) {
+            suggestionsContainer.classList.add('hidden');
+        }
+    }
+
+    handleKeyDown(event, type) {
+        const suggestionsContainer = document.getElementById(`${type}-suggestions`);
+        if (!suggestionsContainer || suggestionsContainer.classList.contains('hidden')) {
+            return;
+        }
+        
+        const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item[data-station]');
+        
+        if (suggestions.length === 0) return;
+
+        const highlighted = suggestionsContainer.querySelector('.highlighted');
+        let currentIndex = highlighted ? parseInt(highlighted.dataset.index) : -1;
+
+        switch (event.key) {
+            case 'ArrowDown':
+                event.preventDefault();
+                currentIndex = Math.min(currentIndex + 1, suggestions.length - 1);
+                this.highlightSuggestion(suggestions, currentIndex);
+                break;
+            case 'ArrowUp':
+                event.preventDefault();
+                currentIndex = Math.max(currentIndex - 1, 0);
+                this.highlightSuggestion(suggestions, currentIndex);
+                break;
+            case 'Enter':
+                event.preventDefault();
+                if (highlighted && highlighted.dataset.station) {
+                    const station = JSON.parse(highlighted.dataset.station);
+                    this.selectStation(station, type);
+                }
+                break;
+            case 'Escape':
+                this.hideSuggestions(type);
+                break;
+        }
+    }
+
+    highlightSuggestion(suggestions, index) {
+        suggestions.forEach(item => item.classList.remove('highlighted'));
+        if (suggestions[index]) {
+            suggestions[index].classList.add('highlighted');
+        }
+    }
+
+    selectStation(station, type) {
+        const input = document.getElementById(`${type}-station`);
+        if (input) {
+            input.value = station.name;
+        }
+        
+        if (type === 'from') {
+            this.currentFromStation = station;
+        } else {
+            this.currentToStation = station;
+        }
+        
+        this.hideSuggestions(type);
+        this.validateInputs();
+    }
+
+    clearStationSelection(type) {
+        if (type === 'from') {
+            this.currentFromStation = null;
+        } else {
+            this.currentToStation = null;
+        }
+        this.validateInputs();
+    }
+
+    swapStations() {
+        const fromInput = document.getElementById('from-station');
+        const toInput = document.getElementById('to-station');
+        
+        if (!fromInput || !toInput) return;
+        
+        const tempValue = fromInput.value;
+        const tempStation = this.currentFromStation;
+        
+        fromInput.value = toInput.value;
+        this.currentFromStation = this.currentToStation;
+        
+        toInput.value = tempValue;
+        this.currentToStation = tempStation;
+        
+        this.validateInputs();
+    }
+
+    validateInputs() {
+        const searchButton = document.getElementById('search-trains');
+        const fromInput = document.getElementById('from-station');
+        const toInput = document.getElementById('to-station');
+        
+        if (!searchButton || !fromInput || !toInput) return;
+        
+        // Check if we have text in both fields and they are different
+        const hasFromText = fromInput.value.trim().length > 0;
+        const hasToText = toInput.value.trim().length > 0;
+        const isDifferent = fromInput.value.trim() !== toInput.value.trim();
+        
+        const isValid = hasFromText && hasToText && isDifferent;
+        
+        // Also check if we have valid station objects for better validation
+        if (isValid && this.currentFromStation && this.currentToStation) {
+            searchButton.disabled = this.currentFromStation.code === this.currentToStation.code;
+        } else {
+            searchButton.disabled = !isValid;
+        }
+    }
+
+    async searchTrains() {
+        const fromInput = document.getElementById('from-station');
+        const toInput = document.getElementById('to-station');
+        
+        if (!fromInput?.value.trim() || !toInput?.value.trim()) {
+            this.showError('Please enter both departure and destination stations');
+            return;
+        }
+
+        // If we don't have station objects, try to find them
+        if (!this.currentFromStation) {
+            this.currentFromStation = this.findStationByName(fromInput.value.trim());
+        }
+        if (!this.currentToStation) {
+            this.currentToStation = this.findStationByName(toInput.value.trim());
+        }
+
+        if (!this.currentFromStation || !this.currentToStation) {
+            this.showError('Please select valid stations from the suggestions');
+            return;
+        }
+
+        this.showLoading();
+        this.showResults();
+
+        try {
+            let data;
+            
+            if (this.currentApiMethod === 'sample') {
+                // Create sample data for the selected route
+                data = this.createSampleDataForRoute(this.currentFromStation, this.currentToStation);
+                this.updateDataSourceStatus('Using sample data', 'fallback');
+            } else {
+                data = await this.fetchTrainData();
+                this.updateDataSourceStatus('Live data loaded successfully', 'live');
+            }
+
+            this.displayTrains(data);
+            this.updateLastUpdated();
+        } catch (error) {
+            console.error('Error fetching train data:', error);
+            
+            // Fallback to sample data
+            if (this.currentApiMethod !== 'sample') {
+                this.updateDataSourceStatus('Live data failed - using sample data', 'fallback');
+                const fallbackData = this.createSampleDataForRoute(this.currentFromStation, this.currentToStation);
+                this.displayTrains(fallbackData);
+                this.updateLastUpdated();
+                this.showError('Could not fetch live data. Showing sample data instead. Try a different API method or check CORS settings.');
+            } else {
+                this.showError('Failed to load train data');
+            }
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    findStationByName(name) {
+        return this.stations.find(station => 
+            station.name.toLowerCase() === name.toLowerCase()
+        );
+    }
+
+    createSampleDataForRoute(fromStation, toStation) {
+        return {
+            services: this.sampleData.services.map((service, index) => ({
+                ...service,
+                serviceUid: `P${12345 + index}`,
+                trainIdentity: `${index + 1}${String.fromCharCode(65 + index)}${20 + index}`,
+                locations: [
+                    {
+                        ...service.locations[0],
+                        crs: fromStation.code,
+                        description: fromStation.name
+                    },
+                    {
+                        ...service.locations[1],
+                        crs: toStation.code,
+                        description: toStation.name
+                    }
+                ]
+            }))
+        };
+    }
+
+    async fetchTrainData() {
+        const url = this.buildApiUrl();
+        const headers = this.buildHeaders();
+
+        let fetchUrl = url;
+        let options = { headers };
+
+        // Apply CORS proxy if needed
+        if (this.currentApiMethod === 'proxy1') {
+            fetchUrl = this.corsProxies.proxy1 + url;
+        } else if (this.currentApiMethod === 'proxy2') {
+            fetchUrl = this.corsProxies.proxy2 + encodeURIComponent(url);
+            options = {}; // AllOrigins doesn't support custom headers
+        }
+
+        const response = await fetch(fetchUrl, options);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        let data = await response.json();
+        
+        // Handle AllOrigins response format
+        if (this.currentApiMethod === 'proxy2' && data.contents) {
+            data = JSON.parse(data.contents);
+        }
+
+        return data;
+    }
+
+    buildApiUrl() {
+        return this.apiConfig.baseUrl
+            .replace('{from}', this.currentFromStation.code)
+            .replace('{to}', this.currentToStation.code);
+    }
+
+    buildHeaders() {
+        const auth = btoa(`${this.apiConfig.username}:${this.apiConfig.password}`);
+        return {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    displayTrains(data) {
+        const resultsContainer = document.getElementById('train-results');
+        const routeDisplay = document.getElementById('route-display');
+        const errorElement = document.getElementById('error-message');
+        
+        if (!resultsContainer || !routeDisplay) {
+            console.error('Required elements not found');
+            return;
+        }
+        
+        // Clear any previous errors
+        if (errorElement) {
+            errorElement.classList.add('hidden');
+        }
+        
+        routeDisplay.textContent = `${this.currentFromStation.name} → ${this.currentToStation.name}`;
+
+        if (!data || !data.services || data.services.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="empty-state">
+                    <h4>No trains found</h4>
+                    <p>No direct services available for this route at the moment.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const londonOvergroundCheckbox = document.getElementById('london-overground');
+        const londonOvergroundEnabled = londonOvergroundCheckbox ? londonOvergroundCheckbox.checked : true;
+        let services = data.services;
+
+        // Filter London Overground if disabled
+        if (!londonOvergroundEnabled) {
+            services = services.filter(service => 
+                service.atocCode !== 'LO' && 
+                service.operator !== 'London Overground' &&
+                service.atocName !== 'London Overground'
+            );
+        }
+
+        if (services.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="empty-state">
+                    <h4>No trains found</h4>
+                    <p>No services match your criteria. Try enabling London Overground.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const trainsHTML = services.map(service => this.renderTrainCard(service)).join('');
+        resultsContainer.innerHTML = trainsHTML;
+    }
+
+    renderTrainCard(service) {
+        if (!service.locations || service.locations.length < 2) {
+            return '';
+        }
+
+        const departureLocation = service.locations[0];
+        const arrivalLocation = service.locations[service.locations.length - 1];
+        
+        const departureTime = departureLocation.realtimeDeparture || departureLocation.gbttBookedDeparture;
+        const arrivalTime = arrivalLocation.realtimeArrival || arrivalLocation.gbttBookedArrival;
+        
+        const duration = this.calculateDuration(departureTime, arrivalTime);
+        const operator = service.operator || service.atocName || 'Unknown Operator';
+        const trainId = service.trainIdentity || service.serviceUid?.slice(-4) || 'N/A';
+
+        return `
+            <div class="train-card">
+                <div class="train-header">
+                    <div class="train-operator">${operator}</div>
+                    <div class="train-times">
+                        <span class="time-departure">${this.formatTime(departureTime)}</span>
+                        <span>→</span>
+                        <span class="time-arrival">${this.formatTime(arrivalTime)}</span>
+                        <span class="duration">${duration}</span>
+                    </div>
+                </div>
+                <div class="train-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Train ID</span>
+                        <span class="detail-value">${trainId}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Departure Platform</span>
+                        <span class="detail-value">
+                            <span class="platform">${departureLocation.platform || 'TBA'}</span>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Arrival Platform</span>
+                        <span class="detail-value">
+                            <span class="platform">${arrivalLocation.platform || 'TBA'}</span>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Service Type</span>
+                        <span class="detail-value">${service.serviceType || 'Train'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    formatTime(timeString) {
+        if (!timeString) return 'TBA';
+        const timeStr = String(timeString).padStart(4, '0');
+        return `${timeStr.slice(0, 2)}:${timeStr.slice(2)}`;
+    }
+
+    calculateDuration(departureTime, arrivalTime) {
+        if (!departureTime || !arrivalTime) return 'Unknown';
+        
+        const depStr = String(departureTime).padStart(4, '0');
+        const arrStr = String(arrivalTime).padStart(4, '0');
+        
+        const depMinutes = parseInt(depStr.slice(0, 2)) * 60 + parseInt(depStr.slice(2));
+        const arrMinutes = parseInt(arrStr.slice(0, 2)) * 60 + parseInt(arrStr.slice(2));
+        
+        let duration = arrMinutes - depMinutes;
+        if (duration < 0) duration += 24 * 60; // Handle next day arrival
+        
+        const hours = Math.floor(duration / 60);
+        const minutes = duration % 60;
+        
+        return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    }
+
+    showLoading() {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const trainResults = document.getElementById('train-results');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+        if (trainResults) trainResults.innerHTML = '';
+        if (errorMessage) errorMessage.classList.add('hidden');
+    }
+
+    hideLoading() {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) loadingIndicator.classList.add('hidden');
+    }
+
+    showResults() {
+        const resultsContainer = document.getElementById('results-container');
+        if (resultsContainer) resultsContainer.classList.remove('hidden');
+    }
+
+    showError(message) {
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+    }
+
+    updateDataSourceStatus(message, type = 'info') {
+        const statusElement = document.getElementById('data-source-status');
+        if (!statusElement) return;
+        
+        statusElement.textContent = message;
+        
+        // Reset classes
+        statusElement.className = 'status';
+        
+        // Add appropriate class
+        switch (type) {
+            case 'live':
+                statusElement.classList.add('status--live');
+                break;
+            case 'fallback':
+                statusElement.classList.add('status--fallback');
+                break;
+            case 'error':
+                statusElement.classList.add('status--error');
+                break;
+            default:
+                statusElement.classList.add('status--info');
+        }
+    }
+
+    updateLastUpdated() {
+        const lastUpdatedElement = document.getElementById('last-updated');
+        if (lastUpdatedElement) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-GB', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            lastUpdatedElement.textContent = `Last updated: ${timeString}`;
+        }
     }
 }
 
-function updateLogBadge() {
-    if (elements.logBadge) {
-        elements.logBadge.textContent = logEntries.length;
-    }
-}
-
-// Auto-refresh every 30 seconds
-setInterval(() => {
-    addLogEntry('info', 'Auto-refresh triggered');
-    loadTrainData();
-}, 30000);
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing Train Tracker...');
+    new TrainTracker();
+});
