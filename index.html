@@ -3,225 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Train Tracker - Enhanced with Debug Tools</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Train Tracker - Minimal Working Version</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #218896, #1a687b);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .card-header {
+            background: rgba(33, 136, 150, 0.1);
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #218896;
+        }
+        .btn {
+            background: #218896;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+        .btn:hover {
+            background: #1a687b;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .journey-inputs {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 1.5rem;
+        }
+        .swap-btn {
+            background: #218896;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .results {
+            margin-top: 1rem;
+        }
+        .train-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .train-time {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #218896;
+        }
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        .hidden { display: none; }
+        @media (max-width: 768px) {
+            .journey-inputs {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .swap-btn {
+                width: 40px;
+                height: 40px;
+                transform: rotate(90deg);
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>Train Tracker</h1>
-            <p class="subtitle">Live train data with comprehensive debugging tools</p>
-        </header>
+    <div class="header">
+        <h1>UK Train Tracker</h1>
+        <p>Live train departure information</p>
+    </div>
 
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-            <button class="tab-button tab-button--active" data-tab="main">Train Search</button>
-            <button class="tab-button" data-tab="debug">Debug Tools</button>
+    <div class="card">
+        <div class="card-header">
+            <h3>API Access Method</h3>
         </div>
-
-        <!-- Main Tab Content -->
-        <div id="main-tab" class="tab-content tab-content--active">
-            <main class="main-content">
-                <!-- API Access Method Selection -->
-                <div class="card api-method-card">
-                    <div class="card__header">
-                        <h3>API Access Method</h3>
-                    </div>
-                    <div class="card__body">
-                        <div class="form-group">
-                            <label for="api-method" class="form-label">Choose how to access train data:</label>
-                            <select id="api-method" class="form-control">
-                                <option value="direct">Direct API (may be blocked by CORS)</option>
-                                <option value="proxy1">CORS Proxy 1 (cors-anywhere)</option>
-                                <option value="proxy2" selected>CORS Proxy 2 (allorigins) - WORKING</option>
-                                <option value="proxy3">CORS Proxy 3 (codetabs)</option>
-                                <option value="sample">Sample Data (for testing)</option>
-                            </select>
-                        </div>
-                        <div class="data-source-indicator">
-                            <span id="data-source-status" class="status status--info">Ready to search</span>
-                            <span id="last-update" class="last-update"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Station Selection -->
-                <div class="card station-card">
-                    <div class="card__header">
-                        <h3>Select Journey</h3>
-                    </div>
-                    <div class="card__body">
-                        <div class="journey-inputs">
-                            <div class="station-input-group">
-                                <label for="from-station" class="form-label">From</label>
-                                <div class="station-autocomplete">
-                                    <input type="text" id="from-station" class="form-control station-input" 
-                                           placeholder="Enter departure station" value="Watford Junction (WFJ)">
-                                    <div id="from-suggestions" class="autocomplete-dropdown"></div>
-                                </div>
-                            </div>
-                            
-                            <button id="swap-stations" class="swap-button" title="Reverse journey">
-                                ⇄
-                            </button>
-                            
-                            <div class="station-input-group">
-                                <label for="to-station" class="form-label">To</label>
-                                <div class="station-autocomplete">
-                                    <input type="text" id="to-station" class="form-control station-input" 
-                                           placeholder="Enter destination station" value="London Euston (EUS)">
-                                    <div id="to-suggestions" class="autocomplete-dropdown"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="journey-controls">
-                            <div class="toggle-group">
-                                <label class="toggle-label">
-                                    <input type="checkbox" id="show-overground" class="toggle-input">
-                                    <span class="toggle-slider"></span>
-                                    Show London Overground
-                                </label>
-                            </div>
-                            <button id="search-trains" class="btn btn--primary">
-                                🔍 Search Trains
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Results Display -->
-                <div class="results-section">
-                    <div id="loading" class="loading hidden">
-                        <div class="loading-spinner"></div>
-                        <p>Searching for trains...</p>
-                    </div>
-                    
-                    <div id="error" class="error hidden">
-                        <h3>Unable to fetch train data</h3>
-                        <p id="error-message">Please try a different API method or check the Debug tab for details.</p>
-                        <button class="btn btn--secondary" onclick="switchToDebugTab()">Open Debug Tab</button>
-                    </div>
-                    
-                    <div id="results" class="results"></div>
-                </div>
-            </main>
-        </div>
-
-        <!-- Debug Tab Content -->
-        <div id="debug-tab" class="tab-content">
-            <div class="debug-content">
-                <!-- API Testing Section -->
-                <div class="debug-section">
-                    <h2>🔧 API Testing & Debugging</h2>
-                    
-                    <!-- Manual API Test -->
-                    <div class="card debug-card">
-                        <div class="card__header">
-                            <h3>Manual API Test</h3>
-                        </div>
-                        <div class="card__body">
-                            <div class="debug-form">
-                                <div class="form-group">
-                                    <label for="debug-from" class="form-label">From Station Code</label>
-                                    <input type="text" id="debug-from" class="form-control" value="WFJ" placeholder="e.g., WFJ">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="debug-to" class="form-label">To Station Code</label>
-                                    <input type="text" id="debug-to" class="form-control" value="EUS" placeholder="e.g., EUS">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="debug-method" class="form-label">Test Method</label>
-                                    <select id="debug-method" class="form-control">
-                                        <option value="direct">Direct API Call</option>
-                                        <option value="proxy1">CORS Proxy 1</option>
-                                        <option value="proxy2" selected>CORS Proxy 2 (Working)</option>
-                                        <option value="proxy3">CORS Proxy 3</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="debug-buttons">
-                                    <button id="test-api" class="btn btn--primary">Test API Call</button>
-                                    <button id="clear-logs" class="btn btn--secondary">Clear Logs</button>
-                                    <button id="copy-url" class="btn btn--secondary">Copy Test URL</button>
-                                </div>
-                            </div>
-                            
-                            <!-- Generated URL Display -->
-                            <div class="url-display">
-                                <label class="form-label">Generated API URL:</label>
-                                <div class="url-box">
-                                    <code id="generated-url">Configure parameters above to see URL</code>
-                                    <button class="copy-btn" onclick="copyGeneratedUrl()" title="Copy URL">📋</button>
-                                </div>
-                            </div>
-                            
-                            <!-- External Testing Links -->
-                            <div class="external-links">
-                                <h4>External Testing</h4>
-                                <div class="link-buttons">
-                                    <a id="realtimetrains-link" href="#" target="_blank" class="btn btn--info">
-                                        🚆 Test on Realtimetrains.co.uk
-                                    </a>
-                                    <a href="https://api.rtt.io" target="_blank" class="btn btn--secondary">
-                                        📄 RTT API Docs
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Live Logging -->
-                    <div class="card debug-card">
-                        <div class="card__header">
-                            <h3>📋 Live API Logs</h3>
-                            <div class="log-stats">
-                                <span id="log-count" class="log-stat">0 entries</span>
-                                <span id="success-rate" class="log-stat">0% success</span>
-                            </div>
-                        </div>
-                        <div class="card__body">
-                            <div class="log-filters">
-                                <button class="filter-btn active" data-filter="all">All</button>
-                                <button class="filter-btn" data-filter="success">Success</button>
-                                <button class="filter-btn" data-filter="error">Errors</button>
-                                <button class="filter-btn" data-filter="cors">CORS</button>
-                            </div>
-                            
-                            <div id="debug-logs" class="debug-logs">
-                                <div class="log-placeholder">
-                                    📄 API calls will be logged here. Try making a test call above.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Response Inspector -->
-                    <div class="card debug-card">
-                        <div class="card__header">
-                            <h3>🔍 Response Inspector</h3>
-                        </div>
-                        <div class="card__body">
-                            <div class="inspector-tabs">
-                                <button class="inspector-tab active" data-tab="headers">Headers</button>
-                                <button class="inspector-tab" data-tab="json">JSON Response</button>
-                                <button class="inspector-tab" data-tab="parsed">Parsed Data</button>
-                            </div>
-                            
-                            <div id="inspector-content" class="inspector-content">
-                                <div class="inspector-placeholder">
-                                    Make an API call to see detailed response information
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="api-method">Choose how to access train data:</label>
+                <select id="api-method">
+                    <option value="sample">Sample Data (testing)</option>
+                    <option value="proxy2" selected>CORS Proxy (allorigins)</option>
+                    <option value="direct">Direct API (may be blocked)</option>
+                </select>
             </div>
+            <div id="status">Ready to search</div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <div class="card">
+        <div class="card-header">
+            <h3>Select Journey</h3>
+        </div>
+        <div class="card-body">
+            <div class="journey-inputs">
+                <div class="form-group">
+                    <label for="from-station">From</label>
+                    <input type="text" id="from-station" value="Watford Junction (WFJ)" placeholder="From station">
+                </div>
+                <button class="swap-btn" id="swap-btn">⇄</button>
+                <div class="form-group">
+                    <label for="to-station">To</label>
+                    <input type="text" id="to-station" value="London Euston (EUS)" placeholder="To station">
+                </div>
+            </div>
+            <button class="btn" id="search-btn">🔍 Search Trains</button>
+            <button class="btn btn-secondary" id="test-btn">🔧 Test API</button>
+        </div>
+    </div>
+
+    <div id="results" class="results"></div>
+
+    <script>
+        class SimpleTrainTracker {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                console.log('Simple Train Tracker initializing...');
+                
+                // Bind events
+                document.getElementById('search-btn').addEventListener('click', () => this.searchTrains());
+                document.getElementById('test-btn').addEventListener('click', () => this.testAPI());
+                document.getElementById('swap-btn').addEventListener('click', () => this.swapStations());
+                
+                this.updateStatus('Ready - Click Search to find trains');
+                console.log('Simple Train Tracker initialized successfully');
+            }
+
+            swapStations() {
+                const fromInput = document.getElementById('from-station');
+                const toInput = document.getElementById('to-station');
+                const temp = fromInput.value;
+                fromInput.value = toInput.value;
+                toInput.value = temp;
+                this.updateStatus('Stations swapped');
+            }
+
+            extractStationCode(stationText) {
+                const match = stationText.match(/\(([A-Z]{3,4})\)/);
+                return match ? match[1] : stationText.substring(0, 3).toUpperCase();
+            }
+
+            updateStatus(message, type = 'info') {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = message;
+                statusEl.className = `status status-${type}`;
+            }
+
+            showResults(content) {
+                document.getElementById('results').innerHTML = content;
+            }
+
+            async searchTrains() {
+                const searchBtn = document.getElementById('search-btn');
+                searchBtn.disabled = true;
+                searchBtn.textContent = '🔄 Searching...';
+                
+                this.updateStatus('Searching for trains...', 'warning');
+                this.showResults('<div class="loading">Searching for trains...</div>');
+
+                try {
+                    const fromStation = document.getElementById('from-station').value;
+                    const toStation = document.getElementById('to-station').value;
+                    const method = document.getElementById('api-method').value;
+
+                    const fromCode = this.extractStationCode(fromStation);
+                    const toCode = this.extractStationCode(toStation);
+
+                    if (method === 'sample') {
+                        await this.loadSampleData();
+                        return;
+                    }
+
+                    const data = await this.makeAPICall(fromCode, toCode, method);
+                    this.displayTrains(data);
+                    
+                } catch (error) {
+                    console.error('Search failed:', error);
+                    this.updateStatus(`Search failed: ${error.message}`, 'error');
+                    this.showResults(`
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>Search Failed</h3>
+                                <p><strong>Error:</strong> ${error.message}</p>
+                                <p><strong>Suggestions:</strong></p>
+                                <ul>
+                                    <li>Try "Sample Data" to test the interface</li>
+                                    <li>Check your internet connection</li>
+                                    <li>Try the "Test API" button for debugging</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `);
+                } finally {
+                    searchBtn.disabled = false;
+                    searchBtn.textContent = '🔍 Search Trains';
+                }
+            }
+
+            async loadSampleData() {
+                // Simulate loading delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const sampleTrains = [
+                    {
+                        time: '18:30',
+                        expected: '18:32',
+                        platform: '2',
+                        operator: 'London Overground',
+                        destination: 'London Euston',
+                        status: 'Delayed 2m'
+                    },
+                    {
+                        time: '18:45',
+                        expected: '18:45',
+                        platform: '1',
+                        operator: 'Avanti West Coast',
+                        destination: 'London Euston',
+                        status: 'On time'
+                    }
+                ];
+
+                this.displayTrains({ services: sampleTrains.map(train => ({
+                    locationDetail: {
+                        gbttBookedDeparture: train.time.replace(':', ''),
+                        realtimeDeparture: train.expected.replace(':', ''),
+                        platform: train.platform
+                    },
+                    atocName: train.operator
+                }))});
+
+                this.updateStatus('Sample data loaded successfully', 'success');
+            }
+
+            async makeAPICall(fromCode, toCode, method) {
+                const baseURL = `https://api.rtt.io/api/v1/json/search/${fromCode}/to/${toCode}`;
+                let url = baseURL;
+
+                if (method === 'proxy2') {
+                    url = `https://api.allorigins.win/get?url=${encodeURIComponent(baseURL)}`;
+                }
+
+                const credentials = btoa('rttapi_daz4590:4b886b4940dfd3dbe7b659004994360ec8a34cbc');
+                
+                console.log(`Making API call: ${method} ${fromCode} → ${toCode}`);
+                console.log(`URL: ${url}`);
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Basic ${credentials}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                let data = await response.text();
+                
+                // Handle AllOrigins wrapper
+                if (method === 'proxy2') {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.contents) {
+                            data = parsed.contents;
+                        }
+                    } catch (e) {
+                        console.log('Failed to parse AllOrigins wrapper');
+                    }
+                }
+
+                return JSON.parse(data);
+            }
+
+            displayTrains(data) {
+                if (!data || !data.services || data.services.length === 0) {
+                    this.showResults(`
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>No Trains Found</h3>
+                                <p>No services found for this route. Try:</p>
+                                <ul>
+                                    <li>Checking the station codes are correct</li>
+                                    <li>Trying a different time of day</li>
+                                    <li>Using "Sample Data" for testing</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `);
+                    this.updateStatus('No trains found', 'warning');
+                    return;
+                }
+
+                const trains = data.services.slice(0, 3).map(service => {
+                    const locationDetail = service.locationDetail || {};
+                    const scheduledTime = this.formatTime(locationDetail.gbttBookedDeparture);
+                    const expectedTime = this.formatTime(locationDetail.realtimeDeparture || locationDetail.gbttBookedDeparture);
+                    const platform = locationDetail.platform || 'TBA';
+                    const operator = service.atocName || 'Unknown';
+                    const isDelayed = expectedTime !== scheduledTime;
+
+                    return `
+                        <div class="train-card">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <div class="train-time">${scheduledTime}</div>
+                                    ${isDelayed ? `<div style="color: #dc3545; font-size: 0.9rem;">Expected: ${expectedTime}</div>` : ''}
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.8rem; color: #666;">Platform</div>
+                                    <div style="font-size: 1.1rem; font-weight: bold;">${platform}</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div><strong>${operator}</strong></div>
+                                <div class="status ${isDelayed ? 'status-warning' : 'status-success'}">${isDelayed ? 'Delayed' : 'On time'}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                this.showResults(`
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Next Trains</h3>
+                        </div>
+                        <div class="card-body">
+                            ${trains}
+                        </div>
+                    </div>
+                `);
+
+                this.updateStatus(`Found ${data.services.length} trains`, 'success');
+            }
+
+            formatTime(timeStr) {
+                if (!timeStr || timeStr.length !== 4) return 'TBA';
+                return `${timeStr.substring(0, 2)}:${timeStr.substring(2)}`;
+            }
+
+            async testAPI() {
+                const testBtn = document.getElementById('test-btn');
+                testBtn.disabled = true;
+                testBtn.textContent = '🔄 Testing...';
+
+                try {
+                    console.log('Testing API connectivity...');
+                    this.updateStatus('Testing API...', 'warning');
+                    
+                    const data = await this.makeAPICall('WFJ', 'EUS', 'proxy2');
+                    console.log('API Test successful:', data);
+                    this.updateStatus('API test successful!', 'success');
+                    
+                    alert(`API Test Results:\n✅ Status: Success\n🚆 Services found: ${data.services?.length || 0}\n📍 Location: ${data.location?.name || 'Unknown'}`);
+                    
+                } catch (error) {
+                    console.error('API Test failed:', error);
+                    this.updateStatus('API test failed', 'error');
+                    alert(`API Test Results:\n❌ Status: Failed\n🔴 Error: ${error.message}\n\nTry using "Sample Data" mode for testing.`);
+                } finally {
+                    testBtn.disabled = false;
+                    testBtn.textContent = '🔧 Test API';
+                }
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing Train Tracker...');
+            window.trainTracker = new SimpleTrainTracker();
+        });
+    </script>
 </body>
 </html>
