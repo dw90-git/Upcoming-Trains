@@ -3,620 +3,866 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Train Tracker - Bulletproof Version</title>
+    <title>UK Train Tracker - Live On-Demand</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 900px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
-            background: #f5f5f5;
+            background: #f8f9fa;
+            line-height: 1.6;
+            color: #333;
         }
+
         .header {
             text-align: center;
-            background: linear-gradient(135deg, #218896, #1a687b);
+            background: linear-gradient(135deg, #2c5aa0, #1e3a5f);
             color: white;
-            padding: 2rem;
+            padding: 3rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(44, 90, 160, 0.3);
+        }
+
+        .header::before {
+            content: '🚂';
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.1;
+            top: 1rem;
+            right: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .cost-banner {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 1.5rem;
             border-radius: 12px;
             margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(40, 167, 69, 0.3);
         }
+
         .card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
             overflow: hidden;
+            border: 1px solid #e9ecef;
         }
+
         .card-header {
-            background: rgba(33, 136, 150, 0.1);
-            padding: 1.5rem;
-            border-bottom: 1px solid #e0e0e0;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 2rem;
+            border-bottom: 2px solid #e9ecef;
         }
-        .card-body { padding: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
+
+        .card-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c5aa0;
+            margin: 0;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
         label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #495057;
         }
-        input, select {
+
+        select {
             width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 1rem;
+            border: 2px solid #ced4da;
+            border-radius: 10px;
             font-size: 1rem;
+            background: white;
+            transition: all 0.2s ease;
         }
-        input:focus, select:focus {
+
+        select:focus {
             outline: none;
-            border-color: #218896;
+            border-color: #2c5aa0;
+            box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
         }
+
         .btn {
-            background: #218896;
+            background: #2c5aa0;
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
+            padding: 1rem 2rem;
+            border-radius: 10px;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 160px;
         }
-        .btn:hover { background: #1a687b; }
+
+        .btn:hover {
+            background: #1e3a5f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(44, 90, 160, 0.4);
+        }
+
         .btn:disabled {
-            background: #ccc;
+            background: #6c757d;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
-        .btn-secondary { background: #6c757d; }
-        .btn-secondary:hover { background: #545b62; }
-        .btn-success { background: #28a745; }
-        .btn-success:hover { background: #218838; }
-        .journey-inputs {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        }
+
+        .control-group {
+            display: flex;
             gap: 1rem;
-            align-items: end;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .api-status {
+            padding: 1rem;
+            border-radius: 10px;
             margin-bottom: 1.5rem;
+            font-size: 0.9rem;
         }
-        .swap-btn {
-            background: #218896;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 48px;
-            height: 48px;
-            font-size: 1.2rem;
-            cursor: pointer;
+
+        .api-status.testing {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
         }
-        .results { margin-top: 1rem; }
+
+        .api-status.working {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .api-status.failed {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
         .train-card {
             background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        .train-time {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #218896;
-        }
-        .status {
-            padding: 0.25rem 0.5rem;
+            border: 2px solid #e9ecef;
+            border-left: 6px solid #28a745;
             border-radius: 12px;
-            font-size: 0.875rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .train-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .train-card.delayed {
+            border-left-color: #ffc107;
+        }
+
+        .train-card.cancelled {
+            border-left-color: #dc3545;
+        }
+
+        .train-card.fresh {
+            border-left-color: #20c997;
+            animation: newData 2s ease-out;
+        }
+
+        @keyframes newData {
+            0% {
+                background: #e8f8f3;
+            }
+            100% {
+                background: white;
+            }
+        }
+
+        .train-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .train-time {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c5aa0;
+        }
+
+        .train-expected {
+            color: #856404;
+            font-size: 1.1rem;
             font-weight: 500;
         }
-        .status-success { background: #d4edda; color: #155724; }
-        .status-warning { background: #fff3cd; color: #856404; }
-        .status-error { background: #f8d7da; color: #721c24; }
-        .status-info { background: #d1ecf1; color: #0c5460; }
+
+        .train-platform {
+            text-align: right;
+        }
+
+        .platform-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+
+        .platform-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #495057;
+        }
+
+        .train-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.95rem;
+        }
+
+        .detail-item strong {
+            color: #495057;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .loading {
             text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2c5aa0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+            background: white;
+            border-radius: 16px;
+            border: 2px dashed #ced4da;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
+            border: 2px solid #bee5eb;
+            border-radius: 12px;
             padding: 2rem;
-            color: #666;
+            margin-top: 2rem;
+            font-size: 0.95rem;
         }
-        .error-details {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-item strong {
+            display: block;
+            color: #2c5aa0;
+            margin-bottom: 0.5rem;
+        }
+
+        .cost-highlight {
+            background: #d1ecf1;
+            border: 2px solid #bee5eb;
             border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.9rem;
+            padding: 1.5rem;
+            color: #0c5460;
+            font-weight: 500;
         }
-        .debug-info {
-            background: #e9ecef;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-            font-size: 0.9rem;
+
+        .hidden {
+            display: none !important;
         }
-        .hidden { display: none; }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .journey-inputs {
-                grid-template-columns: 1fr;
+            body {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card-header,
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .train-header {
+                flex-direction: column;
                 gap: 1rem;
             }
-            .swap-btn {
-                width: 40px;
-                height: 40px;
-                transform: rotate(90deg);
+
+            .train-platform {
+                text-align: left;
+            }
+
+            .train-details {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="header">
-        <h1>🚂 UK Train Tracker</h1>
-        <p>Bulletproof edition with multiple fallback strategies</p>
+        <h1>🚂 UK Live Train Tracker</h1>
+        <p>Instant live data • On-demand refresh • Always up-to-date</p>
+    </div>
+
+    <div class="cost-banner">
+        <strong>💰 COMPLETELY FREE!</strong>
+        Zero hosting costs • No API limits • Instant fresh data when you need it
+    </div>
+
+    <div id="api-status" class="api-status testing hidden">
+        <strong>🔧 API Status:</strong> <span id="api-message">Testing connection...</span>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h3>🔧 Debug & Testing</h3>
+            <h3>🚂 Get Live Train Times</h3>
         </div>
         <div class="card-body">
-            <button class="btn btn-success" id="sample-data-btn">📋 Load Sample Data</button>
-            <button class="btn btn-secondary" id="test-cors-btn">🌐 Test CORS Proxies</button>
-            <button class="btn btn-secondary" id="test-direct-btn">🔍 Test Direct API</button>
-            <button class="btn btn-secondary" id="clear-logs-btn">🗑️ Clear Logs</button>
-            <div id="debug-status" class="debug-info" style="margin-top: 1rem;">
-                Click "Load Sample Data" to test the interface, or "Test CORS Proxies" to check API connectivity.
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3>🚂 Train Search</h3>
-        </div>
-        <div class="card-body">
-            <div class="journey-inputs">
-                <div class="form-group">
-                    <label for="from-station">From</label>
-                    <input type="text" id="from-station" value="Watford Junction (WFJ)" placeholder="From station">
-                </div>
-                <button class="swap-btn" id="swap-btn">⇄</button>
-                <div class="form-group">
-                    <label for="to-station">To</label>
-                    <input type="text" id="to-station" value="London Euston (EUS)" placeholder="To station">
-                </div>
-            </div>
-            
             <div class="form-group">
-                <label for="api-method">API Method</label>
-                <select id="api-method">
-                    <option value="sample">📋 Sample Data (Always Works)</option>
-                    <option value="auto">🔄 Auto (Try All Methods)</option>
-                    <option value="proxy-allorigins">🌐 AllOrigins Proxy</option>
-                    <option value="proxy-corsproxy">🌐 CORS Proxy</option>
-                    <option value="direct">⚡ Direct API</option>
+                <label for="route-select">Select your journey:</label>
+                <select id="route-select">
+                    <option value="WFJ-EUS">🚂 Watford Junction → London Euston</option>
+                    <option value="EUS-WFJ">🚂 London Euston → Watford Junction</option>
+                    <option value="PAD-RDG">🚂 London Paddington → Reading</option>
+                    <option value="RDG-PAD">🚂 Reading → London Paddington</option>
+                    <option value="VIC-BTN">🚂 London Victoria → Brighton</option>
+                    <option value="BTN-VIC">🚂 Brighton → London Victoria</option>
+                    <option value="KGX-YRK">🚂 London King's Cross → York</option>
+                    <option value="YRK-KGX">🚂 York → London King's Cross</option>
+                    <option value="LST-NRW">🚂 London Liverpool Street → Norwich</option>
+                    <option value="NRW-LST">🚂 Norwich → London Liverpool Street</option>
+                    <option value="MAN-LIV">🚂 Manchester → Liverpool</option>
+                    <option value="LIV-MAN">🚂 Liverpool → Manchester</option>
+                    <option value="BHM-EUS">🚂 Birmingham → London Euston</option>
+                    <option value="GLC-EDB">🚂 Glasgow Central → Edinburgh</option>
                 </select>
             </div>
-            
-            <button class="btn" id="search-btn">🔍 Search Trains</button>
-            <div id="status" class="status status-info" style="margin-top: 1rem;">Ready to search</div>
+
+            <div class="control-group">
+                <button class="btn btn-success" id="refresh-btn">
+                    <span id="refresh-text">⚡ Get Live Times</span>
+                </button>
+                <button class="btn btn-secondary" id="test-btn">🔧 Test Connection</button>
+            </div>
+
+            <div class="api-status testing" style="margin-top: 1.5rem; margin-bottom: 0;">
+                <strong>ℹ️ How it works:</strong> Click "Get Live Times" to fetch the freshest train data directly from the RTT API. 
+                No scheduled updates = zero costs and always current information!
+            </div>
         </div>
     </div>
 
-    <div id="results" class="results"></div>
+    <div id="results"></div>
 
     <script>
-        class BulletproofTrainTracker {
+        class LiveTrainTracker {
             constructor() {
-                this.logs = [];
-                this.currentTime = new Date();
+                this.currentRoute = null;
+                this.lastFetchTime = null;
+                this.apiMethod = null;
                 this.init();
             }
 
-            init() {
-                console.log('🚂 Bulletproof Train Tracker initializing...');
-                
+            async init() {
+                console.log('🚂 Live Train Tracker initializing...');
+
                 // Bind events
-                document.getElementById('search-btn').addEventListener('click', () => this.searchTrains());
-                document.getElementById('swap-btn').addEventListener('click', () => this.swapStations());
-                document.getElementById('sample-data-btn').addEventListener('click', () => this.loadSampleData());
-                document.getElementById('test-cors-btn').addEventListener('click', () => this.testAllProxies());
-                document.getElementById('test-direct-btn').addEventListener('click', () => this.testDirectAPI());
-                document.getElementById('clear-logs-btn').addEventListener('click', () => this.clearLogs());
-                
-                this.log('✅ Train Tracker initialized successfully');
-                this.updateStatus('Ready - Try "Load Sample Data" first');
+                document.getElementById('route-select').addEventListener('change', (e) => {
+                    this.selectRoute(e.target.value);
+                });
+
+                document.getElementById('refresh-btn').addEventListener('click', () => {
+                    this.fetchLiveData();
+                });
+
+                document.getElementById('test-btn').addEventListener('click', () => {
+                    this.testConnection();
+                });
+
+                // Set default route
+                this.selectRoute('WFJ-EUS');
+
+                // Auto-test connection on load
+                setTimeout(() => this.testConnection(), 500);
+
+                console.log('✅ Live Train Tracker ready');
             }
 
-            log(message, type = 'info') {
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = `[${timestamp}] ${message}`;
-                
-                this.logs.push(logEntry);
-                console.log(logEntry);
-                
-                // Keep only last 50 logs
-                if (this.logs.length > 50) {
-                    this.logs = this.logs.slice(-50);
+            selectRoute(value) {
+                const routes = {
+                    'WFJ-EUS': { from: 'WFJ', to: 'EUS', name: 'Watford Junction → London Euston' },
+                    'EUS-WFJ': { from: 'EUS', to: 'WFJ', name: 'London Euston → Watford Junction' },
+                    'PAD-RDG': { from: 'PAD', to: 'RDG', name: 'London Paddington → Reading' },
+                    'RDG-PAD': { from: 'RDG', to: 'PAD', name: 'Reading → London Paddington' },
+                    'VIC-BTN': { from: 'VIC', to: 'BTN', name: 'London Victoria → Brighton' },
+                    'BTN-VIC': { from: 'BTN', to: 'VIC', name: 'Brighton → London Victoria' },
+                    'KGX-YRK': { from: 'KGX', to: 'YRK', name: 'London King\'s Cross → York' },
+                    'YRK-KGX': { from: 'YRK', to: 'KGX', name: 'York → London King\'s Cross' },
+                    'LST-NRW': { from: 'LST', to: 'NRW', name: 'London Liverpool Street → Norwich' },
+                    'NRW-LST': { from: 'NRW', to: 'LST', name: 'Norwich → London Liverpool Street' },
+                    'MAN-LIV': { from: 'MAN', to: 'LIV', name: 'Manchester → Liverpool' },
+                    'LIV-MAN': { from: 'LIV', to: 'MAN', name: 'Liverpool → Manchester' },
+                    'BHM-EUS': { from: 'BHM', to: 'EUS', name: 'Birmingham → London Euston' },
+                    'GLC-EDB': { from: 'GLC', to: 'EDB', name: 'Glasgow Central → Edinburgh' }
+                };
+
+                this.currentRoute = routes[value];
+                console.log('📍 Route selected:', this.currentRoute.name);
+            }
+
+            async fetchLiveData() {
+                if (!this.currentRoute) {
+                    this.showStatus('Please select a route first', 'failed');
+                    return;
                 }
-                
-                this.updateDebugStatus();
+
+                const refreshBtn = document.getElementById('refresh-btn');
+                const refreshText = document.getElementById('refresh-text');
+
+                // Update UI
+                refreshBtn.disabled = true;
+                refreshText.innerHTML = '⏳ Fetching...';
+
+                this.showStatus('🔄 Fetching live data from RTT API...', 'testing');
+                this.showResults(`
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <h3>Fetching Live Data</h3>
+                        <p>Getting the latest train times for <strong>${this.currentRoute.name}</strong></p>
+                        <small>Direct from RTT API • Always fresh • No caching</small>
+                    </div>
+                `);
+
+                try {
+                    const startTime = Date.now();
+                    const data = await this.callTrainAPI(this.currentRoute.from, this.currentRoute.to);
+                    const fetchTime = Date.now() - startTime;
+
+                    this.lastFetchTime = new Date();
+                    this.displayTrainData(data, fetchTime);
+
+                    this.showStatus(`✅ Fresh data loaded via ${this.apiMethod} in ${fetchTime}ms`, 'working');
+                    console.log(`✅ Success: ${data.services?.length || 0} trains found in ${fetchTime}ms`);
+
+                } catch (error) {
+                    console.error('❌ API Error:', error);
+                    this.showStatus(`❌ Failed: ${error.message}`, 'failed');
+                    this.showErrorState(error);
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshText.innerHTML = '⚡ Refresh Data';
+                }
             }
 
-            updateDebugStatus() {
-                const debugEl = document.getElementById('debug-status');
-                const recentLogs = this.logs.slice(-5).join('\\n');
-                debugEl.innerHTML = `<strong>Recent Activity:</strong><br><pre style="margin: 0.5rem 0;">${recentLogs}</pre>`;
-            }
+            async callTrainAPI(from, to) {
+                const baseUrl = `https://api.rtt.io/api/v1/json/search/${from}/to/${to}`;
+                const credentials = btoa('rttapi_daz4590:4b886b4940dfd3dbe7b659004994360ec8a34cbc');
 
-            clearLogs() {
-                this.logs = [];
-                this.updateDebugStatus();
-                this.log('🗑️ Logs cleared');
-            }
-
-            swapStations() {
-                const fromInput = document.getElementById('from-station');
-                const toInput = document.getElementById('to-station');
-                const temp = fromInput.value;
-                fromInput.value = toInput.value;
-                toInput.value = temp;
-                this.log('🔄 Stations swapped');
-                this.updateStatus('Stations swapped');
-            }
-
-            extractStationCode(stationText) {
-                const match = stationText.match(/\\(([A-Z]{3,4})\\)/);
-                return match ? match[1] : stationText.substring(0, 3).toUpperCase();
-            }
-
-            updateStatus(message, type = 'info') {
-                const statusEl = document.getElementById('status');
-                statusEl.textContent = message;
-                statusEl.className = `status status-${type}`;
-            }
-
-            showResults(content) {
-                document.getElementById('results').innerHTML = content;
-            }
-
-            async loadSampleData() {
-                this.log('📋 Loading sample data...');
-                this.updateStatus('Loading sample data...', 'warning');
-                
-                // Simulate loading delay
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                const currentTime = new Date();
-                const sampleTrains = [
+                const methods = [
                     {
-                        time: this.addMinutes(currentTime, 8),
-                        expectedTime: this.addMinutes(currentTime, 10),
-                        platform: '2',
-                        operator: 'London Overground',
-                        destination: 'London Euston',
-                        status: 'Delayed 2m',
-                        note: 'Sample data for testing'
+                        name: 'AllOrigins Proxy',
+                        url: `https://api.allorigins.win/get?url=${encodeURIComponent(baseUrl)}`,
+                        unwrap: true
                     },
                     {
-                        time: this.addMinutes(currentTime, 25),
-                        expectedTime: this.addMinutes(currentTime, 25),
-                        platform: '1',
-                        operator: 'Avanti West Coast', 
-                        destination: 'London Euston',
-                        status: 'On time',
-                        note: 'Sample data for testing'
+                        name: 'Direct API',
+                        url: baseUrl,
+                        unwrap: false
                     },
                     {
-                        time: this.addMinutes(currentTime, 42),
-                        expectedTime: this.addMinutes(currentTime, 45),
-                        platform: '3',
-                        operator: 'West Midlands Trains',
-                        destination: 'London Euston', 
-                        status: 'Delayed 3m',
-                        note: 'Sample data for testing'
+                        name: 'CodeTabs Proxy',
+                        url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(baseUrl)}`,
+                        unwrap: false
                     }
                 ];
 
-                const trainsHTML = sampleTrains.map(train => {
-                    const isDelayed = train.status.includes('Delayed');
-                    return `
-                        <div class="train-card" style="border-left: 4px solid ${isDelayed ? '#ffc107' : '#28a745'};">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-                                <div>
-                                    <div class="train-time">${this.formatTime(train.time)}</div>
-                                    ${isDelayed ? `<div style="color: #856404; font-size: 0.9rem;">Expected: ${this.formatTime(train.expectedTime)}</div>` : ''}
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-size: 0.8rem; color: #666;">Platform</div>
-                                    <div style="font-size: 1.1rem; font-weight: bold;">${train.platform}</div>
-                                </div>
+                for (const method of methods) {
+                    try {
+                        console.log(`🔄 Trying ${method.name}...`);
+
+                        const response = await fetch(method.url, {
+                            headers: {
+                                'Authorization': `Basic ${credentials}`,
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
+                            },
+                            signal: AbortSignal.timeout(15000)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+
+                        let data = await response.text();
+
+                        // Handle proxy wrapper
+                        if (method.unwrap) {
+                            const parsed = JSON.parse(data);
+                            if (parsed.contents) {
+                                data = parsed.contents;
+                            }
+                        }
+
+                        const jsonData = JSON.parse(data);
+                        this.apiMethod = method.name;
+                        return jsonData;
+
+                    } catch (error) {
+                        console.log(`❌ ${method.name} failed:`, error.message);
+                        continue;
+                    }
+                }
+
+                throw new Error('All API methods failed - check internet connection');
+            }
+
+            displayTrainData(data, fetchTime) {
+                if (!data?.services?.length) {
+                    this.showResults(`
+                        <div class="empty-state">
+                            <h3>🚂 No Trains Found</h3>
+                            <p>No current services for <strong>${this.currentRoute.name}</strong></p>
+                            <p><em>Try a different route or time of day</em></p>
+                            <button class="btn btn-success" onclick="trainTracker.fetchLiveData()">
+                                🔄 Try Again
+                            </button>
+                        </div>
+                    `);
+                    return;
+                }
+
+                const trains = data.services
+                    .filter(s => s.isPassenger !== false)
+                    .slice(0, 10)
+                    .map(s => this.formatTrain(s));
+
+                const trainsHtml = trains.map((train, i) => `
+                    <div class="train-card ${train.statusClass} ${i < 3 ? 'fresh' : ''}">
+                        <div class="train-header">
+                            <div>
+                                <div class="train-time">${train.scheduledTime}</div>
+                                ${train.expectedTime !== train.scheduledTime ? 
+                                    `<div class="train-expected">Expected: ${train.expectedTime}</div>` : ''
+                                }
                             </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div><strong>${train.operator}</strong></div>
-                                <div class="status ${isDelayed ? 'status-warning' : 'status-success'}">${train.status}</div>
-                            </div>
-                            <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
-                                💡 ${train.note}
+                            <div class="train-platform">
+                                <div class="platform-label">Platform</div>
+                                <div class="platform-number">${train.platform}</div>
                             </div>
                         </div>
-                    `;
-                }).join('');
+
+                        <div class="train-details">
+                            <div class="detail-item">
+                                <strong>Operator:</strong><br>
+                                ${train.operator}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Service:</strong><br>
+                                ${train.serviceId}
+                            </div>
+                            <div class="detail-item">
+                                <strong>Status:</strong><br>
+                                <span class="status-badge status-${train.statusClass}">${train.statusText}</span>
+                            </div>
+                        </div>
+
+                        ${train.destination ? `
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; font-size: 0.9rem; color: #6c757d;">
+                                <strong>🎯 Calling at:</strong> ${train.destination}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
 
                 this.showResults(`
                     <div class="card">
                         <div class="card-header">
-                            <h3>🚂 Sample Train Departures</h3>
+                            <h3>🚂 ${this.currentRoute.name}</h3>
                         </div>
                         <div class="card-body">
-                            ${trainsHTML}
-                            <div style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border-radius: 8px;">
-                                <strong>✅ Interface Test Successful!</strong><br>
-                                The sample data proves the interface is working correctly. 
-                                Now try "Test CORS Proxies" to check API connectivity.
+                            ${trainsHtml}
+
+                            <div class="info-panel">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <strong>📡 Data Status:</strong>
+                                        Fresh from RTT API
+                                    </div>
+                                    <div class="info-item">
+                                        <strong>⚡ Fetch Speed:</strong>
+                                        ${fetchTime}ms
+                                    </div>
+                                    <div class="info-item">
+                                        <strong>🕒 Updated:</strong>
+                                        ${this.lastFetchTime.toLocaleTimeString()}
+                                    </div>
+                                    <div class="info-item">
+                                        <strong>🌐 Method:</strong>
+                                        ${this.apiMethod}
+                                    </div>
+                                </div>
+
+                                <div class="cost-highlight">
+                                    <strong>💰 Zero-Cost Solution:</strong> This data was fetched on-demand when you clicked refresh. 
+                                    No scheduled updates, no hosting fees, no API limits - completely free forever!
+                                </div>
+
+                                <button class="btn btn-success" onclick="trainTracker.fetchLiveData()" style="margin-top: 1rem;">
+                                    ⚡ Refresh for Latest
+                                </button>
                             </div>
                         </div>
                     </div>
                 `);
-
-                this.updateStatus('Sample data loaded successfully!', 'success');
-                this.log('✅ Sample data loaded - interface working correctly');
             }
 
-            addMinutes(date, minutes) {
-                return new Date(date.getTime() + minutes * 60000);
-            }
+            formatTrain(service) {
+                const detail = service.locationDetail || {};
 
-            formatTime(date) {
-                return date.toLocaleTimeString('en-GB', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-            }
+                const scheduled = this.formatTime(detail.gbttBookedDeparture || detail.workingDeparture);
+                const realtime = this.formatTime(detail.realtimeDeparture);
+                const expected = realtime || scheduled;
 
-            async testAllProxies() {
-                this.log('🌐 Testing all CORS proxies...');
-                this.updateStatus('Testing CORS proxies...', 'warning');
-                
-                const proxies = [
-                    { name: 'AllOrigins', url: 'https://api.allorigins.win/get?url=' },
-                    { name: 'CORS Proxy', url: 'https://api.codetabs.com/v1/proxy?quest=' },
-                    { name: 'Heroku CORS', url: 'https://cors-anywhere.herokuapp.com/' }
-                ];
+                let statusClass = 'success';
+                let statusText = 'On time';
 
-                const results = [];
-                
-                for (const proxy of proxies) {
-                    try {
-                        this.log(`🔍 Testing ${proxy.name}...`);
-                        const result = await this.testProxy(proxy);
-                        results.push({...proxy, ...result, success: true});
-                        this.log(`✅ ${proxy.name}: SUCCESS (${result.responseTime}ms)`);
-                    } catch (error) {
-                        results.push({...proxy, success: false, error: error.message});
-                        this.log(`❌ ${proxy.name}: FAILED - ${error.message}`);
+                if (detail.cancelled) {
+                    statusClass = 'error';
+                    statusText = 'Cancelled';
+                } else if (expected && expected !== scheduled) {
+                    const delay = this.timeDiff(scheduled, expected);
+                    if (delay > 0) {
+                        statusClass = 'warning';
+                        statusText = `Delayed ${delay}m`;
+                    } else if (delay < 0) {
+                        statusClass = 'success';
+                        statusText = `Early ${Math.abs(delay)}m`;
                     }
                 }
 
-                this.displayProxyResults(results);
-            }
-
-            async testProxy(proxy) {
-                const baseURL = 'https://api.rtt.io/api/v1/json/search/WFJ/to/EUS';
-                const url = proxy.url + encodeURIComponent(baseURL);
-                const credentials = btoa('rttapi_daz4590:4b886b4940dfd3dbe7b659004994360ec8a34cbc');
-                
-                const startTime = Date.now();
-                
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Basic ${credentials}`,
-                        'Accept': 'application/json'
-                    },
-                    signal: AbortSignal.timeout(10000)
-                });
-
-                const responseTime = Date.now() - startTime;
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                let data = await response.text();
-                
-                // Handle AllOrigins wrapper
-                if (proxy.name === 'AllOrigins') {
-                    try {
-                        const parsed = JSON.parse(data);
-                        if (parsed.contents) {
-                            data = parsed.contents;
-                        }
-                    } catch (e) {
-                        throw new Error('Failed to parse AllOrigins wrapper');
-                    }
-                }
-
-                const jsonData = JSON.parse(data);
-                
                 return {
-                    responseTime,
-                    servicesCount: jsonData.services?.length || 0,
-                    location: jsonData.location?.name || 'Unknown'
+                    scheduledTime: scheduled || 'TBA',
+                    expectedTime: expected || scheduled || 'TBA',
+                    platform: detail.platform || 'TBA',
+                    operator: service.atocName || 'Unknown',
+                    serviceId: service.trainIdentity || service.serviceUid?.slice(-4) || 'Unknown',
+                    destination: detail.destination?.map(d => d.description).join(', ') || null,
+                    statusClass,
+                    statusText
                 };
             }
 
-            displayProxyResults(results) {
-                const workingProxies = results.filter(r => r.success);
-                const failedProxies = results.filter(r => !r.success);
+            formatTime(timeStr) {
+                if (!timeStr || timeStr.length !== 4) return null;
+                return `${timeStr.slice(0, 2)}:${timeStr.slice(2)}`;
+            }
 
-                const resultsHTML = `
+            timeDiff(time1, time2) {
+                if (!time1 || !time2) return 0;
+                const [h1, m1] = time1.split(':').map(Number);
+                const [h2, m2] = time2.split(':').map(Number);
+                return (h2 * 60 + m2) - (h1 * 60 + m1);
+            }
+
+            showErrorState(error) {
+                this.showResults(`
                     <div class="card">
                         <div class="card-header">
-                            <h3>🌐 CORS Proxy Test Results</h3>
+                            <h3>❌ Connection Error</h3>
                         </div>
                         <div class="card-body">
-                            ${workingProxies.length > 0 ? `
-                                <h4 style="color: #28a745;">✅ Working Proxies (${workingProxies.length})</h4>
-                                ${workingProxies.map(proxy => `
-                                    <div style="background: #d4edda; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;">
-                                        <strong>${proxy.name}</strong><br>
-                                        Response Time: ${proxy.responseTime}ms<br>
-                                        Services Found: ${proxy.servicesCount}<br>
-                                        Location: ${proxy.location}
-                                    </div>
-                                `).join('')}
-                            ` : ''}
-                            
-                            ${failedProxies.length > 0 ? `
-                                <h4 style="color: #dc3545; margin-top: 1rem;">❌ Failed Proxies (${failedProxies.length})</h4>
-                                ${failedProxies.map(proxy => `
-                                    <div style="background: #f8d7da; padding: 1rem; margin: 0.5rem 0; border-radius: 8px;">
-                                        <strong>${proxy.name}</strong><br>
-                                        Error: ${proxy.error}
-                                    </div>
-                                `).join('')}
-                            ` : ''}
-                            
-                            <div style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border-radius: 8px;">
-                                <strong>📋 Recommendations:</strong><br>
-                                ${workingProxies.length > 0 
-                                    ? `✅ Use "${workingProxies[0].name}" for best results (${workingProxies[0].responseTime}ms response time)`
-                                    : '❌ No proxies working - try "Load Sample Data" or check your internet connection'
-                                }
+                            <div style="background: #f8d7da; border: 2px solid #f5c6cb; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                                <strong>Error:</strong> ${error.message}
                             </div>
-                        </div>
-                    </div>
-                `;
 
-                this.showResults(resultsHTML);
-                
-                if (workingProxies.length > 0) {
-                    this.updateStatus(`Found ${workingProxies.length} working proxy(ies)`, 'success');
-                } else {
-                    this.updateStatus('No proxies working - check connection', 'error');
-                }
-            }
+                            <h4>🔧 Troubleshooting:</h4>
+                            <ol style="margin: 1rem 0; padding-left: 2rem;">
+                                <li>Check your internet connection</li>
+                                <li>Try the "Test Connection" button</li>
+                                <li>Wait a moment and try again</li>
+                                <li>Try a different route</li>
+                            </ol>
 
-            async testDirectAPI() {
-                this.log('⚡ Testing direct RTT API...');
-                this.updateStatus('Testing direct API...', 'warning');
-                
-                try {
-                    const baseURL = 'https://api.rtt.io/api/v1/json/search/WFJ/to/EUS';
-                    const credentials = btoa('rttapi_daz4590:4b886b4940dfd3dbe7b659004994360ec8a34cbc');
-                    
-                    const startTime = Date.now();
-                    const response = await fetch(baseURL, {
-                        headers: {
-                            'Authorization': `Basic ${credentials}`,
-                            'Accept': 'application/json'
-                        },
-                        signal: AbortSignal.timeout(5000)
-                    });
-                    
-                    const responseTime = Date.now() - startTime;
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    this.showResults(`
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>⚡ Direct API Test Results</h3>
-                            </div>
-                            <div class="card-body">
-                                <div style="background: #d4edda; padding: 1rem; border-radius: 8px;">
-                                    <strong>✅ Direct API Working!</strong><br>
-                                    Response Time: ${responseTime}ms<br>
-                                    Services Found: ${data.services?.length || 0}<br>
-                                    Location: ${data.location?.name || 'Unknown'}
-                                </div>
-                                <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 8px;">
-                                    <strong>⚠️ Note:</strong> Direct API worked this time, but may fail due to CORS in some browsers or networks.
-                                </div>
-                            </div>
-                        </div>
-                    `);
-                    
-                    this.updateStatus('Direct API test successful!', 'success');
-                    this.log(`✅ Direct API working - ${data.services?.length || 0} services found`);
-                    
-                } catch (error) {
-                    this.showResults(`
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>⚡ Direct API Test Results</h3>
-                            </div>
-                            <div class="card-body">
-                                <div style="background: #f8d7da; padding: 1rem; border-radius: 8px;">
-                                    <strong>❌ Direct API Failed</strong><br>
-                                    Error: ${error.message}
-                                </div>
-                                <div style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border-radius: 8px;">
-                                    <strong>💡 This is normal!</strong><br>
-                                    Most browsers block direct API calls due to CORS policy. 
-                                    Try "Test CORS Proxies" instead.
-                                </div>
-                            </div>
-                        </div>
-                    `);
-                    
-                    this.updateStatus('Direct API blocked (expected)', 'warning');
-                    this.log(`❌ Direct API blocked: ${error.message}`);
-                }
-            }
-
-            async searchTrains() {
-                const searchBtn = document.getElementById('search-btn');
-                searchBtn.disabled = true;
-                searchBtn.textContent = '🔄 Searching...';
-                
-                this.updateStatus('Searching for trains...', 'warning');
-                this.log('🔍 Starting train search...');
-
-                try {
-                    const method = document.getElementById('api-method').value;
-                    
-                    if (method === 'sample') {
-                        await this.loadSampleData();
-                        return;
-                    }
-                    
-                    // For now, redirect to sample data since API calls are failing
-                    this.log('⚠️ API calls not working - showing sample data instead');
-                    await this.loadSampleData();
-                    
-                } catch (error) {
-                    this.log(`❌ Search failed: ${error.message}`);
-                    this.updateStatus(`Search failed: ${error.message}`, 'error');
-                    
-                    this.showResults(`
-                        <div class="card">
-                            <div class="card-body">
-                                <h3>❌ Search Failed</h3>
-                                <p><strong>Error:</strong> ${error.message}</p>
-                                <div class="error-details">
-                                    <strong>Debugging Steps:</strong><br>
-                                    1. Try "Load Sample Data" to test the interface<br>
-                                    2. Use "Test CORS Proxies" to check API connectivity<br>
-                                    3. Check browser console (F12) for detailed errors<br>
-                                    4. Verify internet connection
-                                </div>
-                                <button class="btn btn-success" onclick="window.trainTracker.loadSampleData()">
-                                    📋 Load Sample Data Instead
+                            <div class="control-group">
+                                <button class="btn btn-success" onclick="trainTracker.fetchLiveData()">
+                                    🔄 Try Again
+                                </button>
+                                <button class="btn btn-secondary" onclick="trainTracker.testConnection()">
+                                    🔧 Test Connection
                                 </button>
                             </div>
                         </div>
-                    `);
+                    </div>
+                `);
+            }
+
+            async testConnection() {
+                const testBtn = document.getElementById('test-btn');
+                testBtn.disabled = true;
+                testBtn.textContent = '🔄 Testing...';
+
+                this.showStatus('🔄 Testing API connection...', 'testing');
+
+                try {
+                    await this.callTrainAPI('WFJ', 'EUS');
+                    this.showStatus(`✅ Connection working via ${this.apiMethod}`, 'working');
+                } catch (error) {
+                    this.showStatus(`❌ Connection failed: ${error.message}`, 'failed');
                 } finally {
-                    searchBtn.disabled = false;
-                    searchBtn.textContent = '🔍 Search Trains';
+                    testBtn.disabled = false;
+                    testBtn.textContent = '🔧 Test Connection';
                 }
+            }
+
+            showStatus(message, type) {
+                const statusEl = document.getElementById('api-status');
+                const messageEl = document.getElementById('api-message');
+
+                messageEl.textContent = message;
+                statusEl.className = `api-status ${type}`;
+                statusEl.classList.remove('hidden');
+            }
+
+            showResults(html) {
+                document.getElementById('results').innerHTML = html;
             }
         }
 
-        // Initialize when page loads
+        // Initialize
+        let trainTracker;
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚂 DOM loaded, initializing Bulletproof Train Tracker...');
-            window.trainTracker = new BulletproofTrainTracker();
+            console.log('🚂 Starting Live Train Tracker...');
+            trainTracker = new LiveTrainTracker();
         });
     </script>
 </body>
